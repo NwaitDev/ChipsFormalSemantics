@@ -205,14 +205,16 @@ To assign values to parameters or variables, Chips defines instructions and expr
 \end{itemize}
 
 
-\paragraph{Definition} (Inputs and outputs) Input parameters $\mathbb{I}$ and output parameters $\mathbb{O}$ for functions are tuples containing a name $n$, a type $t$ and a value $v$. The only difference is the possibility to define for inputs a default value modeled by a boolean $d$.
+\paragraph{Definition} (Inputs) Input parameters $\mathbb{I}$ for functions are tuples containing a name $n$, a type $t$, a value $v$ and a boolean $d$ to define if a default value is available for that parameter.
 
 \begin{align}
     \mathbb{I} = \{(n,t,v,d)~|~n \in S, t \in \mathbb{T}, v \in t, d \in \{\top,\bot\}\}
 \end{align}
 
+\paragraph{Definition} (Outputs) Output parameters $\mathbb{O}$ for functions are tuples containing a name $n$, a type $t$, an expression $e \in E[X_L]$ over a set of local variables $X_L : S -> T$ associated to the function.
+
 \begin{align}
-    \mathbb{O} = \{(n,t,v)~|~n \in S, t \in \mathbb{T}, v \in t\}
+    \mathbb{O} = \{(n,e)~|~n \in S, e \in E[X_L]\}
 \end{align}
 
 To facilitate the expression of properties using inputs and outputs, we also define the following functions:
@@ -252,7 +254,7 @@ defaulted :
 \begin{equation*}
 name :
 \begin{cases}
-(n,t,v)&\longmapsto n \\
+(n,e)&\longmapsto n \\
 \mathbb{O} &\longmapsto S
 \end{cases}
 \end{equation*}
@@ -260,7 +262,7 @@ name :
 \begin{equation*}
 type :
 \begin{cases}
-(n,t,v)&\longmapsto t \\
+(n,e)&\longmapsto type(e)\\
 \mathbb{O} &\longmapsto \mathbb{T}
 \end{cases}
 \end{equation*}
@@ -268,7 +270,7 @@ type :
 \begin{equation*}
 value :
 \begin{cases}
-(n,t,v)&\longmapsto v \\
+(n,e)&\longmapsto value(e) \\
 \mathbb{O} &\longmapsto T
 \end{cases}
 \end{equation*}
@@ -283,25 +285,25 @@ One obvious notion that has to be defined between objects like inputs and output
 \end{itemize}
 
 One can specify the behavior of functional blocks according to their inputs and outputs using a formalism close to the classic definition of a non-deterministic automaton, enhanced with local variables and a ``readiness'' property explained below.  We will assume for the rest of this paper that the names of inputs, outputs and local variables of do not overlap in the definition of the behavior of a function.
-
+\newpage
 \paragraph{Definition} (Function behavior) The behavior of a function with (evidently finite) inputs $I \subset \mathbb{I}$ and (also finite) outputs $O \subset \mathbb{O}$ is a tuple\\$B =  (Q,\Sigma,\Delta,q_0, X_L, ready)$, where:
 \begin{itemize}
     \item $Q$ is a set of states containing exactly $2^{|I|} + 2^{|O|}$ states:
     \begin{itemize}
         \item 3 states representing the initial state $q_{init}$ and the idle state $q_{\emptyset}$,
         \item $2^{|I|}-1$ states, each labelled by a different \textbf{non-empty} unordered set $\iota=\{name(i)~|~i\in I'\subseteq I\}$, which we will write $q_\iota$ for short,
-        \item $2^{|O|}-1$ states, each labelled by a different \textbf{non-empty} unordered set $\omega=\{name(o)~|~o\in O'\subseteq O\}$, which we will write $q_\omega$ for short;
+        \item $2^{|O|}-1$ states, each labelled by a different \textbf{non-empty} unordered set $\omega=\{name(o)~|~o\in O'\subseteq O\}$, which we will write $q_\omega$ for short,
     \end{itemize}
-    \item $q_0 = q_{init}$
+    \item $q_0 = q_{init}$;
     \item $ready\in\{\top,\bot\}$ arbitrarily set unless $\exists i\in I, \neg defaulted(i)$. In that case, $ready = \bot$;
     \item $X_L$ is a finite set of local data variables that associate an identifier in $S$ to a value of type $T\in\mathbb{T}$;
-    \item $\Sigma = \{name(x)~|~x \in I \cup O\}\cup \{\epsilon\}$ serves as the alphabet of the automaton,
+    \item $\Sigma = \{name(x)~|~x \in I \cup O\}\cup \{\epsilon\}$ serves as the alphabet of the automaton;
     \item $\Delta$ is the set of all the transition relations $\delta = (q, evt, \pi, g, q')$, such that:
     \begin{itemize}
         \item $(q, q')\in \{(q_I,q_O), (q_{init},q_I), (q_{init},q_\emptyset)\}\\
         \cup \{(q_{\iota},q_{\iota'})~|~\iota\subset\iota'\subseteq \{name(i)~|~i\in I\} \wedge (|\iota| = |\iota'|-1)\}\\
         \cup \{(q_{\omega},q_{\omega'})~|~\{name(o)~|~o\in O\}\supseteq\omega\supset\omega'  \wedge (|\omega'| = |\omega|-1)\}$;
-        \item $evt \in \Sigma$ in such way that\\$(q\in \{q_{init},q_{I}\} \Rightarrow evt = \epsilon)\\
+        \item $evt \in \Sigma$ in such way that\\$(q\in \{q_{init},q_{I}\} \Leftrightarrow evt = \epsilon)\\
         \wedge(\forall \iota \subset I, \forall x \in I, (q, q') = (q_{\iota},q_{\iota\cup\{name(x)\}}) \Rightarrow evt = name(x))\\
         \wedge(\forall \omega \subset O, \forall x \in O, (q, q') = (q_{\omega\cup\{name(x)\}},q_{\omega}) \Rightarrow evt = name(x))$; 
         \item $\pi : I\cup O\cup X_L \mapsto I\cup O\cup X_L$ is the process to interpret whenever the transition is applied.
@@ -309,20 +311,21 @@ One can specify the behavior of functional blocks according to their inputs and 
     \end{itemize}
 \end{itemize}
 
+\newpage
 \paragraph{Definition} (Functional block) A Chips \textit{functional block} is a tuple\\$f = (B, I, O, I_{default},X_L, init, then, ready)$, where:
 \begin{itemize}
     \item $I \subset \mathbb{I}$ and $O\subset\mathbb{O}$ are finite;
-    \item $I_{default} : \emptyset \mapsto I$ is the definition of default value of type $T\in\mathbb{T}$ for each input of $F$ when provided. If a default value is not provided for an input parameter, then $\bot$ is assigned;
+    \item $I_{default} : \emptyset \mapsto I$ is the definition of default value for each input of $F$ when provided. If a default value is not provided for an input parameter, then the $default$ attribute of the input tuple is set to $\bot$, otherwise, it is set to $\top$;
     \item $X_L \in S \times T$ is a set of local variables;
     \item $init : \emptyset \mapsto S \times T$ is a process that defines the initial values of variables in $X_L$;
-    \item $then : I\cup X_L \mapsto O\cup X_L$ being the process that modifies the values of $X_L$ or $O$ according to the values of $I$ and the past values of $X_L$.
+    \item $then : I\cup X_L \mapsto O\cup X_L$ being the process that modifies the values of $X_L$ and/or $O$ according to the values of $I$ and the past values of $X_L$.
     \item $B = (Q,\Sigma,\Delta,q_0, X_L, ready)$ is the function behavior with inputs $I$ and outputs $O$, for which $\Delta$ is containing the following transitions:
     \begin{itemize}  %(q, evt, \pi, g, q', I, O)
         \item $(q_{init}, \epsilon, X_L:= init(); I:=I_{default}(),ready,q_I)$,
         \item $(q_{init}, \epsilon, X_L:= init(); I:=I_{default}(), \neg ready, q_\emptyset)$,
         \item $(q_I, \epsilon, (I,X_L) := then(I,X_L),\top, q_O)$,
         \item Let $D$ be the set of all the instanciated dataflows, $\forall \delta = (q,evt,\pi,g,q',I,O) \in \Delta, \forall i\in I, (evt = names(i)) \wedge (\exists (o',i') \in D, name(i') = evt) \Rightarrow \pi = value(i) := value(o')$
-    \end{itemize};
+    \end{itemize}
 \end{itemize}
 
 We will call $\mathbb{F}$ the set of possibly definable functional blocks. For this set, we define:
@@ -330,7 +333,7 @@ We will call $\mathbb{F}$ the set of possibly definable functional blocks. For t
 \begin{equation*}
 inputs :
 \begin{cases}
-(\_,I,O,\_,\_,\_,\_)&\longmapsto I \\
+(\_,I,O,\_,\_,\_,\_,\_)&\longmapsto I \\
 \mathbb{F} &\longmapsto \mathbb{I}
 \end{cases}
 \end{equation*}
@@ -338,7 +341,7 @@ inputs :
 \begin{equation*}
 outputs :
 \begin{cases}
-(\_,I,O,\_,\_,\_,\_)&\longmapsto O \\
+(\_,I,O,\_,\_,\_,\_,\_)&\longmapsto O \\
 \mathbb{F} &\longmapsto \mathbb{O}
 \end{cases}
 \end{equation*}
@@ -349,34 +352,30 @@ A particular case of functional block is also worth describing because Chips all
 \begin{align}
 CST :
 \begin{cases}
-e&\longmapsto (loop, \{ (\text{"out"},type(e), value(e)) \}, \emptyset, \emptyset, 0_\Pi, 0_\Pi) \\
+e&\longmapsto (loop, \{ (\text{"out"}, value(e)) \}, \emptyset, \emptyset, 0_\Pi, 0_\Pi) \\
 E[X] &\longmapsto \mathbb{F}
 \end{cases}
 \end{align}
-Where $loop$ is a 1-(initial)state 1-transition automaton and $0_\Pi$ is the empty process.\\
+Where $loop$ is a 1-(initial)state 1-transition automaton and $0_\Pi$ is short for the empty process.\\
 
 Composition of functional blocks is achieved by connecting outputs to inputs. Thus defining \emph{dataflows}.
 
-% \paragraph{Definition} A \emph{dataflow} over a finite set of functional blocks $F \subset \mathbb{F}$ is a pair $d = (o, i)$ where:
-% \begin{itemize}
-%     \item $o \in outputs(f)$ where $f \in F$,
-%     \item $i \in inputs(f)$ where $f \in F$ and $type(i) = type(o)$.
-% \end{itemize}
-
 \paragraph{Notation} We write $D[F]$ the set of all the dataflows over a finite set of functional blocks $F \subset \mathbb{F}$.
 
-\paragraph{Notation} For any dataflow $d = (o,i)$, we note the source of $d$ as $d_{src} = o$ and the sink of $d$ as $d_{snk} = i$.
+\paragraph{Notation} For any dataflow $d = (o,i)$, we note the source of $d$ as $source(d) = o$ and the sink of $d$ as $sink(d) = i$.
 
 \paragraph{Definition} (Functional graph) Functional graphs are, as described in Section~\ref{functions}, a directed graph $G_F = (F,D)$ for which vertices $F\in\mathbb{F}$ (for functions) are instances of functional blocks and edges $D \subset D[F]$ (for dataflows) are the input/output relations between such blocks.
 A functional graph $G_F$ holds the following properties:
 \begin{itemize}
-    \item (output completeness)\begin{align}\forall f\in F,\forall o \in outputs(f), \exists d \in D, o = d_{src}\end{align}
     \item (input completeness)\begin{align}\forall f\in F,\forall i \in inputs(f), \exists d \in D, i = d_{snk}\end{align}
+    \item (output completeness)\begin{align}\forall f\in F,\forall o \in outputs(f), \exists d \in D, o = d_{src}\end{align}
     \item (dataflow sources unicity)\begin{align}\forall o \in outputs(f), (\exists d1 \in D, o = d1_{src})\wedge(\exists d2 \in D, o = d2_{src}) \Rightarrow d1 = d2\end{align}
     \item (dataflow sinks unicity)\begin{align}\forall i \in inputs(f), (\exists d1 \in D, i = d1_{snk})\wedge(\exists d2 \in D, i = d2_{snk}) \Rightarrow d1 = d2\end{align}
 \end{itemize}
 
-Such kind of graphs represent the composition of different functions achieving
+Such kind of graphs represents the composition of different functions achieving the functionnalities of a designed system. To compute the behavior of such system, we decribe hereafter the operational semantics of functional graphs.
+
+\paragraph{Definition} (Functional graphs operational semantics) Let $G_F = (F, D)$ a functional graph achieving input/output completeness and dataflow sources and sinks unicity. The operational semantics of $G_F$ is given by 
 
 \subsubsection{Properties of Chips functional graphs}
 
