@@ -7,12 +7,13 @@
 \usepackage{graphicx}
 \usepackage{listings}
 \usepackage{amsmath}
+\usepackage{mathtools}
 \usepackage{amsfonts}
 \usepackage{hyperref}
 \usepackage{array}
 \usepackage{booktabs}
 \usepackage{multicol}
-\usepackage{biblatex} 
+\usepackage{biblatex}
 \addbibresource{refs.bib}
 
 \title{Chips Operational Semantics}
@@ -30,6 +31,12 @@
     \setlength{\parsep}{0pt}     }
 { \end{itemize}                  } 
 
+
+
+\newcommand{\eqdef}{\stackrel{\mathclap{\normalfont\mbox{\footnotesize def}}}{=}}
+
+\newcommand{\aoverb}[2]{\stackrel{\mathclap{\footnotesize #1}}{#2}}
+\newcommand{\s}{\hspace{1em}}
 
 \begin{document}
 
@@ -172,12 +179,13 @@ Figure~\ref{collectexample} presents an example of definition for a collective f
 
 It is worth noting that for each channeled accumulator defined, the types of the provided expression respect the types of the default accumulator. If it hasn't been the case, an error would have been raised.
 \begin{figure}
+    \centering
     \includegraphics[width=0.3\columnwidth]{imgs/ContainerObject.pdf}
-    \includegraphics[width=0.7\columnwidth]{imgs/collectivefunctionexample.pdf}
+    \includegraphics[width=0.65\columnwidth]{imgs/collectivefunctionexample.pdf}
     \caption{An object definition and a collective function to compute a sum of all the functions among the defined object, ponderated by the longest path to a leaf of the tree formed by the configuration used to collect data, putting an emphasis on data propagated via the \emph{up} channel.}\label{collectexample}
 \end{figure}
 
-
+\newpage
 \section{Formalisation of Chips modeling semantics}\label{osemantic}
 
 This section is dedicated to mathematically describe the elements of the Chips language that were described earlier in a less formal way. At first, we will define the formalism related the language \emph{functional graphs} (graphs related to the functional block dependencies). Secondly, we will put our focus on the \emph{mapping graphs} (graphs related to the association of functions and virtual objects to physical devices). Finally, we will see how the interconnections between virtual and physical objects define the structures of the datastreams that are profiled and aggragated among the system when using Chips collective primitives.
@@ -279,10 +287,9 @@ value :
 One obvious notion that has to be defined between objects like inputs and outputs is the \emph{dataflow}.
 
 \paragraph{Definition} (Dataflow) A dataflow is a tuple $d=(o,i)$, where:
-\begin{itemize}
-    \item $o\in\mathbb{O}$,
-    \item $i\in\mathbb{I}$ and $type(o)=type(i)$.
-\end{itemize}
+\begin{align*}
+o\in\mathbb{O}, i\in\mathbb{I}, type(o)=type(i)
+\end{align*}
 
 One can specify the behavior of functional blocks according to their inputs and outputs using a formalism close to the classic definition of a non-deterministic automaton, enhanced with local variables and a ``readiness'' property explained below.  We will assume for the rest of this paper that the names of inputs, outputs and local variables of do not overlap in the definition of the behavior of a function.
 \newpage
@@ -297,19 +304,21 @@ One can specify the behavior of functional blocks according to their inputs and 
     \item $q_0 = q_{init}$;
     \item $ready\in\{\top,\bot\}$ arbitrarily set unless $\exists i\in I, \neg defaulted(i)$. In that case, $ready = \bot$;
     \item $X_L$ is a finite set of local data variables that associate an identifier in $S$ to a value of type $T\in\mathbb{T}$;
-    \item $\Sigma = \{name(x)~|~x \in I \cup O\}\cup \{\epsilon\}$ serves as the alphabet of the automaton;
+    \item $\Sigma = \{name(x)~|~x \in I \cup O\}\cup \{\varepsilon\}$ serves as the alphabet of the automaton;
     \item $\Delta$ is the set of all the transition relations $\delta = (q, evt, \pi, g, q')$, such that:
     \begin{itemize}
         \item $(q, q')\in \{(q_I,q_O), (q_{init},q_I), (q_{init},q_\emptyset)\}\\
         \cup \{(q_{\iota},q_{\iota'})~|~\iota\subset\iota'\subseteq \{name(i)~|~i\in I\} \wedge (|\iota| = |\iota'|-1)\}\\
         \cup \{(q_{\omega},q_{\omega'})~|~\{name(o)~|~o\in O\}\supseteq\omega\supset\omega'  \wedge (|\omega'| = |\omega|-1)\}$;
-        \item $evt \in \Sigma$ in such way that\\$(q\in \{q_{init},q_{I}\} \Leftrightarrow evt = \epsilon)\\
+        \item $evt \in \Sigma$ in such way that\\$(q\in \{q_{init},q_{I}\} \Leftrightarrow evt = \varepsilon)\\
         \wedge(\forall \iota \subset I, \forall x \in I, (q, q') = (q_{\iota},q_{\iota\cup\{name(x)\}}) \Rightarrow evt = name(x))\\
         \wedge(\forall \omega \subset O, \forall x \in O, (q, q') = (q_{\omega\cup\{name(x)\}},q_{\omega}) \Rightarrow evt = name(x))$; 
-        \item $\pi : I\cup O\cup X_L \mapsto I\cup O\cup X_L$ is the process to interpret whenever the transition is applied.
-        \item $g \in \{\top,\bot\}$ is a guard on the transition equal to $\bot$ iff\\$(ready \wedge (q = q_{init}) \wedge (q' = q_\emptyset)) \vee (\neg ready \wedge (q = q_{init}) \wedge (q' = q_I))$ 
+        \item $\pi : I \times X_L \times O \mapsto I \times X_L \times O$ is the process to interpret whenever the transition is applied, ;
+        \item $g \in \{\top,\bot\}$ is a guard on the transition equal to $\bot$ iff\\$(ready \wedge (q = q_{init}) \wedge (q' = q_\emptyset)) \vee (\neg ready \wedge (q = q_{init}) \wedge (q' = q_I))$.
     \end{itemize}
 \end{itemize}
+
+For any element $\delta = (q, evt, \pi, g, q')$ of $\Delta$, we write $q(\delta)$, $evt(\delta)$, $\pi(\delta)$, $g(\delta)$ and $q'(\delta)$ as the respective components of $\delta$.
 
 \newpage
 \paragraph{Definition} (Functional block) A Chips \textit{functional block} is a tuple\\$f = (B, I, O, I_{default},X_L, init, then, ready)$, where:
@@ -318,22 +327,26 @@ One can specify the behavior of functional blocks according to their inputs and 
     \item $I_{default} : \emptyset \mapsto I$ is the definition of default value for each input of $F$ when provided. If a default value is not provided for an input parameter, then the $default$ attribute of the input tuple is set to $\bot$, otherwise, it is set to $\top$;
     \item $X_L \in S \times T$ is a set of local variables;
     \item $init : \emptyset \mapsto S \times T$ is a process that defines the initial values of variables in $X_L$;
-    \item $then : I\cup X_L \mapsto O\cup X_L$ being the process that modifies the values of $X_L$ and/or $O$ according to the values of $I$ and the past values of $X_L$.
-    \item $B = (Q,\Sigma,\Delta,q_0, X_L, ready)$ is the function behavior with inputs $I$ and outputs $O$, for which $\Delta$ is containing the following transitions:
-    \begin{itemize}  %(q, evt, \pi, g, q', I, O)
-        \item $(q_{init}, \epsilon, X_L:= init(); I:=I_{default}(),ready,q_I)$,
-        \item $(q_{init}, \epsilon, X_L:= init(); I:=I_{default}(), \neg ready, q_\emptyset)$,
-        \item $(q_I, \epsilon, (I,X_L) := then(I,X_L),\top, q_O)$,
-        \item Let $D$ be the set of all the instanciated dataflows, $\forall \delta = (q,evt,\pi,g,q',I,O) \in \Delta, \forall i\in I, (evt = names(i)) \wedge (\exists (o',i') \in D, name(i') = evt) \Rightarrow \pi = value(i) := value(o')$
+    \item $then : I \times X_L \mapsto X_L \times O$ being the process that modifies the values of $X_L$ and/or $O$ according to the values of $I$ and the past values of $X_L$.
+    \item $B = (Q,\Sigma_f,\Delta,q_0, X_L, ready)$ is the function behavior with inputs $I$ and outputs $O$, for which $\Delta$ is containing \textbf{exactly} the following transitions:
+    \begin{itemize}
+        \item $(q_{init}, \varepsilon, X_L:= init(); I:=I_{default}(),ready,q_I)$,
+        \item $(q_{init}, \varepsilon, X_L:= init(); I:=I_{default}(), \neg ready, q_\emptyset)$,
+        \item $(q_I, \varepsilon, (X_L,O) := then(I,X_L),\top, q_O)$,
+        \item Let $D$ be the set of all the instanciated dataflows:\\
+        $\forall \delta = (q,evt,\pi,g,q') \in \Delta,\\
+        (\forall i\in I, (evt = name(i)) \wedge (\exists (o',i') \in D, name(i') = evt)$\\
+        $ \Rightarrow \pi \eqdef value(i) := value(o'))$ and \\
+        $(\forall o\in O, (evt = name(o)) \wedge (\exists (o',i') \in D, name(o') = evt)$\\
+        $ \Rightarrow \pi \eqdef value(o') := value(o))$.
     \end{itemize}
 \end{itemize}
 
 We will call $\mathbb{F}$ the set of possibly definable functional blocks. For this set, we define:
-\begin{multicols}{2}
 \begin{equation*}
 inputs :
 \begin{cases}
-(\_,I,O,\_,\_,\_,\_,\_)&\longmapsto I \\
+(B, I, O, I_{default},X_L, init, then, ready)&\longmapsto I \\
 \mathbb{F} &\longmapsto \mathbb{I}
 \end{cases}
 \end{equation*}
@@ -341,22 +354,46 @@ inputs :
 \begin{equation*}
 outputs :
 \begin{cases}
-(\_,I,O,\_,\_,\_,\_,\_)&\longmapsto O \\
+(B, I, O, I_{default},X_L, init, then, ready)&\longmapsto O \\
 \mathbb{F} &\longmapsto \mathbb{O}
 \end{cases}
 \end{equation*}
 
-\end{multicols}
+\paragraph{Definition} (Operational semantics of Chips functional blocks) The operational semantics of a functional block $f = (B, I, O, I_{default},X_L, init, then, ready)$ is given by the LTS $\sigma(f) = (Q \times X_L \times \mathbb{I}, \Sigma, \rightarrow)$ where:
+\begin{itemize}
+    \item $Q$ is the set of states of the functional block behavior $B$,
+    \item $\Sigma$ is the alphabet of that same $B$,
+    \item $T \in \mathbb{T}$ and
+    \item Let $(q,x)$ be the control state of $f$ with $x\in X_L$, $\rightarrow$ is the minimal transition relation inductively defined by the following rule:
+    \begin{equation}
+        \begin{split}
+            q = q(\delta) \s\s a = evt(\delta)\s\s q' = q(\delta) \s\s g(\delta) = \top \s\s\\
+            \cfrac{
+                (inputs(f),x',outputs(f)) =  \pi(\delta)(inputs(f),x,outputs(f))
+            }
+            {
+                (q,x) \aoverb{a}{\longrightarrow} (q',x')
+            }
+        \end{split},
+    \end{equation}
+    where $a \in \Sigma_f$ is any event that the function $f$ can interpret, i.e.~a writing of an input or a reading of an output.
+\end{itemize}
 
+% To keep ???
+% -------------------------------------------
 A particular case of functional block is also worth describing because Chips allows to directly instanciate it with expressions instead of a definition of functional block plus a functional block instanciation:
+
 \begin{align}
 CST :
 \begin{cases}
-e&\longmapsto (loop, \{ (\text{"out"}, value(e)) \}, \emptyset, \emptyset, 0_\Pi, 0_\Pi) \\
-E[X] &\longmapsto \mathbb{F}
+            & \longmapsto (B, I, O, I_{default} , X_L , init, then, ready)\\
+    e       & \longmapsto (loop, \emptyset, \{ (\text{"output"}, value(e)) \}, \emptyset\mapsto\emptyset ,\emptyset, 0_\Pi, 0_\Pi, \top) \\
+    E[X]    & \longmapsto \mathbb{F}
 \end{cases}
 \end{align}
-Where $loop$ is a 1-(initial)state 1-transition automaton and $0_\Pi$ is short for the empty process.\\
+Where $loop$ is a 1-(initial)state, 1-transition, variable-free function behavior with no updtae process and an alphabet being the singleton $\{\text{"output"}\}$ and $0_\Pi$ is short for the empty process and $X$ is a set of Chips variables.\\
+
+% -------------------------------------------
 
 Composition of functional blocks is achieved by connecting outputs to inputs. Thus defining \emph{dataflows}.
 
