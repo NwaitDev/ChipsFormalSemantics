@@ -38,6 +38,13 @@
 \newcommand{\aoverb}[2]{\stackrel{\mathclap{\footnotesize #1}}{#2}}
 \newcommand{\s}{\hspace{1em}}
 
+\newcommand{\mprod}{\text{ \textbf{m} }}
+
+% Source - https://tex.stackexchange.com/a/371469
+% Posted by Moriambar, modified by community. See post 'Timeline' for change history
+% Retrieved 2026-05-29, License - CC BY-SA 4.0
+\newcommand{\myrule}{\par\noindent\rule[-1pt]{0.5\textwidth}{0.4pt}\\}
+
 \begin{document}
 
 \maketitle
@@ -203,7 +210,7 @@ When mapped by identifiers, types constitute the base element for the constructi
 
 \paragraph{Definition} (Strings) Let $S$ be the set of all possible string sequences that are valid identifiers for vatiables and parameters. From the Chips grammar (Appendix~\ref{grammar}), we see that this set is exactly the language generated from the regular expression \texttt{[a-zA-Z][a-zA-Z0\-9\_]*}, deprived of the set of Chips keywords. 
 
-To assign values to parameters or variables, Chips defines instructions and expressions in a way that is similar to other imperative languages. For concision purposes, we will not detail their semantics and refer to~\cite{plotkin_structural_2004} for examples of equivalent formal interpretation.
+\paragraph{Remark} (Operational semantics of the imperative aspect of Chips) To assign values to parameters or variables, Chips defines instructions and expressions in a way that is similar to other imperative languages. For concision purposes, we will not detail their semantics and refer to~\cite{plotkin_structural_2004} for examples of equivalent formal interpretation.
 
 \paragraph{Notation} We will denote as $T \in mathbb{T}$ the set of all the values a variable $x \in X^S : T$ can hold, $X^S$ being the set of all defined variables in the scope of the use of this notation.
 
@@ -218,7 +225,7 @@ To assign values to parameters or variables, Chips defines instructions and expr
 \paragraph{Definition} (Inputs) Let $\mathbb{I}$ be the set of input parameters for functions. It is made of pairs containing a name $n$ and a value $v$.
 
 \begin{align}
-    \mathbb{I} = \{(n,v)~|~n \in S, v \in T}
+    \mathbb{I} = \{(n,v)~|~n \in S, v \in T\}
 \end{align}
 
 \paragraph{Definition} (Outputs) Let $\mathbb{O}$ be the set of output parameters for functions. It is made of pairs containing a name $n$ and an expression $e \in E[X_L]$ over a set of local variables $X_L : T^S$ associated to the function.
@@ -303,12 +310,12 @@ n           &\longmapsto
         \text{if }\exists o \in O, name(o) = n &\text{then } value(o)\\
         \text{if }\exists x \in X, name(x) = n &\text{then } value(x)
     \end{cases} \\
-S           &\longmapsto 2^\mathbb{T}
+S           &\longmapsto T
 \end{cases}
 \end{equation*}
 With $I$,$O$ and $X$ being respectively the sets of inputs, outputs and variables defined in the scope where the function is used.
 
-For the rest of this paper, we will assume that the names of inputs, outputs and local variables never overlap, even inbetween different functions. This detail is particularly relevant when it comes to describe the operational semantics of our models and is technically easily achievable with character escapement techniques and a correct scope management.  
+For the rest of this paper, we will assume that the names of inputs, outputs and local variables never overlap, even inbetween different functions. This detail is particularly relevant when it comes to describe the operational semantics of our models and is technically easily achievable with character escapement techniques and a correct scope management.
 
 \paragraph{Definition} (Function behavior) One can specify the behavior of functional blocks according to their inputs and outputs using a formalism close to the classic definition of a non-deterministic automaton, enhanced with local variables and a ``readiness'' property explained below. The behavior of a function with (evidently finite) inputs $I \subset \mathbb{I}$ and (also finite) outputs $O \subset \mathbb{O}$ is a tuple\\$B =  (Q,\Sigma,\Delta, X_L, ready)$, where:
 \begin{itemize}
@@ -339,9 +346,11 @@ For any element $\delta = (q, evt, \pi, g, q')$ of $\Delta$, we write $q(\delta)
 \paragraph{Notation} (Substitution) In the remaining of this document, informally, we will write $A[B := C]$ to mean ``the value $A$ for which, in its definition, every instance of the value $B$ is substituted by the value $C$''.
 
 \paragraph{Definition} (Dataflow) A dataflow is a tuple $d=(o,i)$, where:
-\begin{align}
-o\in\mathbb{O}, i\in\mathbb{I}, type(o)=type(i)
-\end{align}
+\begin{itemize}
+    \item $o\in\mathbb{O}$,
+    \item $i\in\mathbb{I}$ and
+    \item $type(o)=type(i)$.
+\end{itemize}
 
 \paragraph{Notation} For any dataflow $d = (o,i)$, we note the source of $d$ as $source(d) = o$ and the sink of $d$ as $sink(d) = i$.
 
@@ -349,7 +358,7 @@ o\in\mathbb{O}, i\in\mathbb{I}, type(o)=type(i)
 \begin{itemize}
     \item $I \subset \mathbb{I}$ and $O\subset\mathbb{O}$ are finite;
     \item $I_{default} \subset \mathbb{I}$ is the set of default values for input of $F$ when they are provided;
-    \item $ready = (\forall i \in names(I), name(i) \in I_{default}) \cup start$, with start arbitrarily set to $\top$ or $\bot$;
+    \item $ready = start \vee (\forall i \in I, name(i) \in names(I_{default}))$, with $start$ arbitrarily set to $\top$ or $\bot$;
     \item $X_L \subset S \times T$ is a finite set of local variables;
     \item $init \subset S \times T$ corresponds to the initial values of variables in $X_L$ (defined by a process that we will abstract here);
     \item $then : I \times X_L \mapsto X_L \times O$ is the process that modifies the values of $X_L$ and/or $O$ according to the values of $I$ and the past values of $X_L$;
@@ -404,7 +413,7 @@ outputs :
     where $a \in \Sigma_f$ is any event that the function $f$ can interpret, i.e.~a writing of an input or a reading of an output.
 \end{itemize}
 
-two particular cases of functional blocks are also worth describing: $CST$ and $buffer$.
+Two particular cases of functional blocks are also worth describing: $CST$ and $buffer$.
 
 \paragraph{Definition} (Constants functional blocks) Chips allows to directly instanciate Constants functional blocks with expressions instead of a definition of functional block plus a functional block instanciation. Their definition is as follow:
 \begin{align}
@@ -427,8 +436,6 @@ Where $loop$ is a 1-(initial)state, 1-transition, variable-free function behavio
     \end{cases}
 \end{align}
 
-
-
 Composition of functional blocks is achieved by connecting outputs to inputs. Thus defining \emph{dataflows}.
 
 \paragraph{Notation} We write $D[F]$ the set of all the dataflows over a finite set of functional blocks $F \subset \mathbb{F}$.
@@ -437,33 +444,58 @@ Composition of functional blocks is achieved by connecting outputs to inputs. Th
 A functional graph $G_F$ holds the following properties:
 \begin{itemize}
     \item (input completeness)
-    \begin{align}
+    \begin{equation}
         \forall f\in F,\forall i \in inputs(f), \exists d \in D, i = sink(d)
-    \end{align}
+    \end{equation}
     \item (output completeness)
-    \begin{align}
+    \begin{equation}
         \forall f\in F,\forall o \in outputs(f), \exists d \in D, o = source(d)
-    \end{align}
+    \end{equation}
     \item (dataflow sources unicity)
-    \begin{align}
+    \begin{equation}
         \forall o \in outputs(f),\\(\exists d_1 \in D, source(d_1) = o)\wedge(\exists d_2 \in D, source(d_2) = o) \Rightarrow d_1 = d_2
-    \end{align}
+    \end{equation}
     \item (dataflow sinks unicity)
-    \begin{align}
+    \begin{equation}
         \forall i \in inputs(f), \\(\exists d_1 \in D, sink(d_1) = i)\wedge(\exists d_2 \in D, sink(d_2) = i) \Rightarrow d1 = d2
-    \end{align}
+    \end{equation}
 \end{itemize}
 
-\paragraph{Definition} (Operational semantics of functional graphs) Let $G_F = (F, D)$ a functional graph achieving input/output completeness and dataflow sources/sinks unicity. All functions are to be executed in parallel, therefore, the operational semantics of each functional block stands simultaneously for every function of $G_F$. However, the input/output dependecy of functions, modeled by dataflows in $D$, imply the synchronization of the different LTSs of our model. The operational semantics of $G_F$ is obtained by the systematic application of the following rules:
+\paragraph{Definition} (Parallel composition of functional blocks) In our computation model, all functional blocks are to be executed in parallel. Therefore, the operational semantics of each functional block stand simultaneously for every functions. However, the input/output dependecy of functions, modeled by dataflows, imply the synchronization of the different automata of a system. For this purpose, we define the (dataflow related) parallel composition operation
+\begin{align}
+    \bullet ~//_d~ \bullet : 
+    \begin{cases}
+        (f_1, f2) &\mapsto f_1[name(source(d)):=d_{label}] \mprod f_2[name(sink(d)):=d_{label}]\\
+        \mathbb{F} \times \mathbb{F} &\mapsto \mathbb{F}
+    \end{cases}
+\end{align}
+where: 
 \begin{itemize}
-    \item Let $f_1$ and $f_2$ be any two separated functions of $G_F$. Let $D' \subseteq D$ be the set of dataflows $d$ for which $source(d) \in outputs(f_1)$ and $sink(d) \in inputs(f_2)$. The semantics of the sub graph formed by $f_1$ and $f_2$ is given by the the mixed product (or synchronous product) $\sigma(f_1) \text{m} \sigma(f_2)$, see~\cite{duboc_mixed_1986}, when all instances of related inputs and outputs names are substituted by a new symbol:
-    \begin{align*}
-        \forall d \in D', \sigma(f_1) := \sigma(f_1)[source(d) := id_d] \wedge \sigma(f_2) := \sigma(f_2)[sink(d) := id_d]
-    \end{align*}
-    where $id_d \in S$ is an unused identifier.
-    \item Let $f \in F$ and $D' \subseteq D$ be the set of dataflows $d$ for which $source(d) \in outputs(f) $ and $sink(d) \in inputs(f)$. The semantics of the subgraph formed by $f$ alone is given by the mixed product $\sigma(f) \text{m} \sigma(buffer(f))$, where 
-    
+    \item $\mprod$ is the mixed (or synchronous) product as defined in~\cite{duboc_mixed_1986},
+    \item $d \in D$ is the dataflow that defines which input and output transitions are to be both re-labelled with the same fresh $d$-specific name $d_{label} \in S$.
 \end{itemize}
+
+\paragraph{Remark} (On the renaming of our functional blocks labels) When defining our system functional blocks, all the names used are chosen pair-wise distincts. Therefore and undesirably, for any two $f_1, f_2 \in \mathbb{F}$, the mixed product of $f_1$ and $f_2$ is isomorphic to the direct product of $f_1$ and $f_2$. Hence the need to rename the input and output of functional blocks when they are synchronized by a dataflow.
+
+\paragraph{Definition} (Operational semantics of composed functional blocks) 
+Let $f_1$ and $f_2$ be any functions of $G_F = (F, D)$ a functional graph. Let $d \in D$ a dataflow for which $source(d) \in outputs(f_1)$ and $sink(d) \in inputs(f_2)$. The semantics of the sub graph formed by the parallel composition of $f_1$ and $f_2$ is simply given by $\sigma(f_1 ~//_d~ f_2)$.\\
+
+\myrule
+This hlined section is to be included in the rest of the definition of the operational semantics of the functional blocks.
+\myrule
+
+\paragraph{Remark} (Self parallel composition) The above definition holds when the source and sink parameters of a given dataflow $d = (o,i)$ are referencing respectively an output and an input of a same functional block $f = (B, I, O, I_{default},X_L, init, then, ready)$. In such case, the operational semantics of this subgraph of the whole system is given by $\sigma(f ~//_d'~ f')$ where 
+\begin{align*}
+    (f',d') = (f[I-\{i\}:=r(I-\{i\})][O:=r(O)][X_L:=r(X_L)], d)[i:=r(i)]
+\end{align*}
+using informally $r$ as the renaming function that chooses new unique names for each variable, parameter or set of such objects.
+
+\paragraph{Definition} (Operational semantics of functional graphs) Let $G_F = (F, D)$ a functional graph achieving input/output completeness and dataflow sources/sinks unicity. The operational semantics of $G_F$ is obtained by the accumulated application of the parallel composition operation on all functional blocks of $G_F$. Let $id \in \mathbb{N}$ be the AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA AAAAAAAAAAA AAAAAAAAAAAAAA AAAAAAAAAAAAAAAA Idon't know how to write this formally.
+\begin{align}
+    \sigma(G_F) = \sigma().
+\end{align}
+
+\myrule
 
 \subsubsection{Properties of Chips functional graphs}
 
