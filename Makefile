@@ -2,10 +2,8 @@
 
 
 all: semantics.tex refs.bib Makefile
-	xelatex $<
+	pdflatex $<
 	biber semantics
-	xelatex $<
-	xelatex $<
-	
+	pdflatex $<	
 clean:
 	rm -f *.aux *.log *.out *.blg *.bbl *.bcf *.xml

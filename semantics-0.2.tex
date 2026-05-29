@@ -1,16 +1,10 @@
-\documentclass[runningheads]{llncs}
+\documentclass{article}
 \usepackage[english]{babel}
 \usepackage[T1]{fontenc}
-\usepackage[utf8]{inputenc}
-\let\proof\relax
-\let\endproof\relax
-\usepackage{iftex}
-\usepackage[dvipdfm]{graphicx}
-\usepackage{rotating}
-\usepackage{bmpsize}
 \usepackage{wrapfig}
 \usepackage{lscape}
 \usepackage{rotating}
+\usepackage{graphicx}
 \usepackage{listings}
 \usepackage{amsmath}
 \usepackage{mathtools}
@@ -20,103 +14,10 @@
 \usepackage{booktabs}
 \usepackage{multicol}
 \usepackage{biblatex}
-\usepackage[version=4]{mhchem}
-\usepackage{siunitx}
-\usepackage{longtable,tabularx}
-\usepackage{times}
-\usepackage{subcaption}
-\usepackage{xcolor}
-\usepackage{multirow}
-\usepackage{enumitem}
-\usepackage{calc}
-
-\newlength{\tabwidth}
-\newlength{\tabwidthi}
-\newlength{\tabwidthii}
-\newlength{\tabwidthiii}
-\newcommand{\tabsize}{\footnotesize}
-\newcommand{\thead}[1]{\tabsize\textbf{#1}}
 \addbibresource{refs.bib}
 
-\newcommand{\ie}{\emph{i.e.}}
-\newcommand{\eg}{\emph{e.g.}}
-\newcommand{\etc}{etc.}
-
-
-\usepackage{sbnotes}
-\declareauthor{sb}{Simon}
-\declareauthor{sc}{Sophie}
-\declareauthor{ok}{Olga}
-\declareauthor{ag}{Anna}
-\initcolors
-
-\newcommand{\todomardone}[2]{\todomar{#1}{\textbf{[DONE]} #2}}
-\newcommand{\todoindone}[3][]{\todoin[\textbf{[DONE]} #1]{#2}{#3}}
-
-% Backward compatibility with notes w/o sbnotes
-\newcommand{\noteok}[1]{\notemar{ok}{#1}}
-\newcommand{\noteinlineok}[1]{\notein{ok}{#1}}
-\newcommand{\notesc}[1]{\notemar{sc}{#1}}
-\newcommand{\SC}[1]{\notein{sc}{#1}}
-\newcommand{\noteinlinesc}[1]{\notein{sc}{#1}}
-\newcommand{\notesb}[1]{\notemar{sb}{#1}}
-\newcommand{\noteinlinesb}[1]{\notein{sb}{#1}}
-
-% --- END COMMENTS AND NOTES -------
-
-\definecolor{codegreen}{rgb}{0,0.6,0}
-\definecolor{codegray}{rgb}{0.5,0.5,0.5}
-\definecolor{codepurple}{rgb}{0.58,0,0.82}
-\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
-\lstdefinestyle{mystyle}{
-    backgroundcolor=\color{backcolour},
-    commentstyle=\color{codegreen},
-    keywordstyle=\color{magenta},
-    numberstyle=\tiny\color{codegray},
-    stringstyle=\color{codepurple},
-    basicstyle=\ttfamily\footnotesize,
-    breakatwhitespace=false,
-    breaklines=true,
-    keepspaces=true,
-    numbers=left,
-    numbersep=4pt,
-    showspaces=false,
-    showstringspaces=false,
-    showtabs=false,
-    tabsize=2,
-    language={c++},
-    % keyword highlighting
-    classoffset=1, % starting new class
-    alsoletter={-,>},
-    morekeywords={->, SYSTEM, physical, logical, int, float, init, then, link, to, spread, collect},
-    keywordstyle=\color{codepurple},
-    classoffset=0
-}
-\lstset{style=mystyle}
-
-\title{Chips Operational Semantics\thanks{This work was supported by the ANR grant ANR-23-CE25-0004 (ADAPT).}}
-
-%\author{No author given}
-\author{
-Anna Gallone\inst{1}\orcidID{0009-0007-3217-3896}
-\and 
-Simon Bliudze\inst{2}\orcidID{0000-0002-7900-5271} 
-\and 
-Sophie Cerf\inst{3}\orcidID{0000-0003-0122-0796} 
-\and
-Olga Kouchnarenko\inst{1}\orcidID{0000-0003-1482-9015}\thanks{O.~Kouchnarenko was supported by the EIPHI Graduate School (grant number ANR-17-EURE-0002).}
-}
-%
-\institute{
-Université Marie et Louis Pasteur, CNRS, UMR 6174 FEMTO-ST, F-25000 Besançon, France
-\and 
-Univ. Lille, Inria, CNRS, Centrale Lille, UMR 9189 CRIStAL, F-59000 Lille, France 
-\and 
-Univ. Grenoble Alpes, Inria, CNRS, Grenoble INP\footnote{Institute of Engineering Univ. Grenoble Alpes}, LIG, F-38000 Grenoble, France \\
-\email{FirstName.LastName@femto-st.fr$^1$,FirstName.LastName@inria.fr$^{2,3}$}
-}
-%\def\titlerunning{Designing with Chips, Executing with BIP}
-\authorrunning{A.~Gallone et al.}
+\title{Chips Operational Semantics}
+\author{Anna <3}
 \date{\today}
 
 % Source - https://tex.stackexchange.com/a/136050
@@ -133,23 +34,20 @@ Univ. Grenoble Alpes, Inria, CNRS, Grenoble INP\footnote{Institute of Engineerin
 
 
 \newcommand{\eqdef}{\stackrel{\mathclap{\normalfont\mbox{\footnotesize def}}}{=}}
+
 \newcommand{\aoverb}[2]{\stackrel{\mathclap{\footnotesize #1}}{#2}}
 \newcommand{\s}{\hspace{1em}}
+
 \newcommand{\mprod}{\text{ \textbf{m} }}
+
 % Source - https://tex.stackexchange.com/a/371469
 % Posted by Moriambar, modified by community. See post 'Timeline' for change history
 % Retrieved 2026-05-29, License - CC BY-SA 4.0
 \newcommand{\myrule}{\par\noindent\rule[-1pt]{0.5\textwidth}{0.4pt}\\}
 
-
-
 \begin{document}
 
 \maketitle
-
-\begin{abstract}
-    This is the abstract for this document.
-\end{abstract}
 
 \section*{Introduction}
 Chips permits its users to describe models of systems executing programs. Therefore, it does not only allow to design algorithms, but also cares about notions such as ``program embedding'', ``dataflows'' or ``device interconnections''. The simultaneous need to describe both algorithms and devices implies a syntax that mixes elements of both imperative and declarative (synchronous) paradigms. Additionally, the coordination of many components in a single system requires a new kind of (collective) primitives that allows the specification of the data evolution when spread or collected among crowds of devices, where local information matters.
@@ -310,11 +208,11 @@ The Chips language uses three kinds of primitive types being \emph{integers}, \e
 
 When mapped by identifiers, types constitute the base element for the construction of function parameter (whether input or output) and variables.
 
-\paragraph{Definition} (Strings) Let $S$ be the set of all possible string sequences that are valid identifiers for vatiables and parameters. From the Chips grammar (Appendix~\ref{grammar}), we see that this set is exactly the language generated from the regular expression \texttt{[a-zA-Z][a-zA-Z0\-9\_]$^*$}, deprived of the set of Chips keywords. 
+\paragraph{Definition} (Strings) Let $S$ be the set of all possible string sequences that are valid identifiers for vatiables and parameters. From the Chips grammar (Appendix~\ref{grammar}), we see that this set is exactly the language generated from the regular expression \texttt{[a-zA-Z][a-zA-Z0\-9\_]*}, deprived of the set of Chips keywords. 
 
 \paragraph{Remark} (Operational semantics of the imperative aspect of Chips) To assign values to parameters or variables, Chips defines instructions and expressions in a way that is similar to other imperative languages. For concision purposes, we will not detail their semantics and refer to~\cite{plotkin_structural_2004} for examples of equivalent formal interpretation.
 
-\paragraph{Notation} We will denote as $T \in \mathbb{T}$ the set of all the values a variable $x \in X^S : T$ can hold, $X^S$ being the set of all defined variables in the scope of the use of this notation.
+\paragraph{Notation} We will denote as $T \in mathbb{T}$ the set of all the values a variable $x \in X^S : T$ can hold, $X^S$ being the set of all defined variables in the scope of the use of this notation.
 
 \paragraph{Notation} For any $X : T^S$, a set of Chips variables, we will denote:
 \begin{itemize}

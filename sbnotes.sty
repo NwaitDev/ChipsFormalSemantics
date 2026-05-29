@@ -1,0 +1,167 @@
+% Coloured comments and to-do notes parameterized by a list of authors
+% 
+% (c) Simon Bliudze
+%
+%% This program can be redistributed and/or modified under the terms
+%% of the LaTeX Project Public License Distributed from CTAN archives
+%% in directory macros/latex/base/lppl.txt.
+% 
+\NeedsTeXFormat{LaTeX2e}[1994/06/01]
+\ProvidesPackage{sbnotes}
+  [2022/09/11 v1.01 LaTeX package coloured comments and to-do notes]
+
+\RequirePackage{etoolbox}           % Lists (http://ctan.org/pkg/etoolbox)
+\RequirePackage[colorinlistoftodos,bordercolor=white]{todonotes}
+\RequirePackage{pgfkeys}            
+
+\makeatletter
+
+% Some packages (e.g. llncs) set tocdepth to 0, which prevents the
+% todo list from showing anything
+\ifnumequal{\value{tocdepth}}{0}{
+  \let\sbnotes@listoftodos\listoftodos
+  \renewcommand\listoftodos{%
+    \setcounter{tocdepth}{1}%
+    \sbnotes@listoftodos%
+    \setcounter{tocdepth}{0}%
+  }
+}{}
+
+\newcounter{sbnotes@author}
+\newcommand{\sbnotes@listofauthors}{}
+\newcommand{\sbnotes@color}{}
+
+\newcommand{\sbnotes@makecolor}[2]{%
+  \expandafter\let\csname\string\color@#1color\endcsname\undefined
+  \pgfmathsetmacro{\hue}{(#2/(\thesbnotes@author-1))^1.715*0.79}
+  \xglobal\definecolor{#1color}{rgb:hsb}{\hue,1,1}%
+  \sbnotes@authorcolor{#1}%
+}
+
+\newcommand{\declareauthor}[2]{%
+  \pgfkeyssetvalue{/sbnotes/names/#1}{#2}%
+  \edef\sbnotes@oldlist{\sbnotes@listofauthors}%
+  \edef\sbnotes@listofauthors{#1\ifx\sbnotes@oldlist\relax\else,\fi%
+    \sbnotes@oldlist}%
+  \stepcounter{sbnotes@author}%
+}
+
+\newcommand{\sbnotes@authorname}[2][, ]{%
+  \def\nextitem{\def\nextitem{#1}}% Separator
+  \renewcommand*{\do}[1]{\nextitem \pgfkeysvalueof{/sbnotes/names/##1}}%
+  \docsvlist{#2}%
+}
+
+\newcommand{\sbnotes@authorcolor}[1]{%
+  \renewcommand*{\do}[1]{\renewcommand{\sbnotes@color}{##1color}\listbreak}%
+  \docsvlist{#1}%
+}
+
+\newcounter{sbnotes@temp}
+\newcommand{\initcolors}{%
+  \declareauthor{all}{ALL}%
+  \setcounter{sbnotes@temp}{0}%
+  \def\nextitem{\def\nextitem{}}% Separator
+  \renewcommand*{\do}[1]{%
+    \nextitem{%
+      \sbnotes@makecolor{##1}{\thesbnotes@temp}%
+      \stepcounter{sbnotes@temp}%
+    }%
+  }%
+  \expandafter\docsvlist\expandafter{\sbnotes@listofauthors}%
+}
+
+\newcommand{\listauthorcolors}[1][]{%
+  #1%
+  \def\nextitem{\def\nextitem{ }}% Separator
+  \renewcommand*{\do}[1]{%
+    \nextitem{%
+      \sbnotes@authorcolor{##1}%
+      \colorbox{\sbnotes@color!40}{\sbnotes@authorname{##1}}%
+    }%
+  }%
+  \expandafter\docsvlist\expandafter{\sbnotes@listofauthors}% 
+}
+
+\newcommand{\sbnotes@todocaption}{}
+\newcommand{\sbnotes@initials}{}
+\newcommand{\sbnotes@todotext}{}
+
+\newcommand{\notein}[2]{%
+  \renewcommand{\sbnotes@initials}{#1}%
+  \renewcommand{\sbnotes@todotext}{#2}%
+%
+  \sbnotes@authorcolor{\sbnotes@initials}%
+  \todo[
+    nolist,
+    inline,
+    color=\sbnotes@color!40,
+  ]{%
+    \textbf{\sbnotes@authorname{#1}:}
+
+    \smallskip
+    \begin{minipage}[t]{\columnwidth}
+      \sbnotes@todotext
+    \end{minipage}
+  }%
+}
+
+\newcommand{\notemar}[2]{%
+  \renewcommand{\sbnotes@initials}{#1}%
+  \renewcommand{\sbnotes@todotext}{#2}%
+%
+  \sbnotes@authorcolor{\sbnotes@initials}%
+  \todo[
+    nolist,
+    color=\sbnotes@color!40,
+    size=\tiny,
+  ]{%
+    \textbf{\sbnotes@authorname{#1}}:\newline%
+    #2%
+  }%
+}
+
+\newcommand{\todoin}[3][@]{%
+  \renewcommand{\sbnotes@initials}{#2}%
+  \renewcommand{\sbnotes@todotext}{#3}%
+  \renewcommand{\sbnotes@todocaption}{%
+    \ifx#1@\sbnotes@todotext\else#1\fi~%
+    {[\MakeUppercase{\sbnotes@initials}]}%
+  }%
+%
+  \sbnotes@authorcolor{#2}%
+  \todo[
+    inline,
+    color=\sbnotes@color!40,
+    caption=\sbnotes@todocaption,
+  ]{%
+    \textbf{To do [\sbnotes@authorname{#2}]:} \ifx#1@\relax\else#1\fi
+
+    \smallskip
+    \begin{minipage}{\columnwidth}
+      \sbnotes@todotext
+    \end{minipage}
+  }%
+}
+
+\newcommand{\todomar}[2]{%
+  \renewcommand{\sbnotes@initials}{#1}%
+  \renewcommand{\sbnotes@todotext}{#2}%
+%
+  \sbnotes@authorcolor{#1}%
+  \todo[
+    color=\sbnotes@color!40,
+    size=\tiny,
+    caption={\sbnotes@todotext~[\MakeUppercase{\sbnotes@initials}]}
+  ]{%
+    \textbf{To do:}\newline%
+    \sbnotes@todotext\newline%
+    \textbf{[\sbnotes@authorname{#1}]}%
+  }%
+}
+
+\makeatother
+
+\endinput
+%%
+%% End of file `sbnotes.sty'.
