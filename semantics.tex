@@ -565,7 +565,7 @@ A functional graph $G_F$ holds the following properties:
 
 \paragraph{Definition} (Parallel composition of functional blocks) In our computation model, all functional blocks are to be executed in parallel. Therefore, the operational semantics of each functional block stand simultaneously for every functions. However, the input/output dependecy of functions, modeled by dataflows, imply the synchronization of the different automata of a system. For this purpose, we define the (dataflow related) parallel composition operation
 \begin{align}
-    \bullet ~//_d~ \bullet : 
+    ~//_d~ : 
     \begin{cases}
         (f_1, f2) &\mapsto f_1[name(source(d)):=d_{label}] \mprod f_2[name(sink(d)):=d_{label}]\\
         \mathbb{F} \times \mathbb{F} &\mapsto \mathbb{F}
@@ -610,10 +610,10 @@ In this (subsub)section, we must define:
 
 \subsection{On mapping graphs}
 
-In this (sub)section, we must define:
+In this (sub)section, we must:
 \begin{itemize}
-    \item formalism definition for mapping graphs
-    \item properties that must hold for correct Chips models
+    \item formalize the definition for mapping graphs
+    \item list important properties of such graphs 
 \end{itemize}
 
 \subsubsection{Definitions over mapping graphs}
@@ -634,17 +634,16 @@ In this (subsub)section, we must define:
 In this (subsub)section, we must define:
 \begin{itemize}
     \item configurations (embedding DAGs)
-    \item hierarchical composition?
     \item functional graph mapping: check if a configuration can support a logical synchronous program
     \item envisionned properties for model checking (reconfigurability, timing robustness, imprecision robustness, others\ldots?)
 \end{itemize}
 
 \subsection{On collective primitives}
 
-In this (sub)section, we must define:
+In this (sub)section, we must:
 \begin{itemize}
-    \item formalism definition for spread and collect
-    \item properties enabled by this concept 
+    \item formalize the definition for spread and collect
+    \item list properties enabled by this concept 
 \end{itemize}
 
 \subsubsection{Formal definitions for collective primitives}
