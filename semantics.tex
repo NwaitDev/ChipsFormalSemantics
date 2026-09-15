@@ -13,6 +13,7 @@
 \usepackage{rotating}
 \usepackage{listings}
 \usepackage{amsmath}
+\usepackage{amssymb}
 \usepackage{mathtools}
 \usepackage{amsfonts}
 \usepackage{hyperref}
@@ -61,6 +62,8 @@
 \newcommand{\noteinlinesc}[1]{\notein{sc}{#1}}
 \newcommand{\notesb}[1]{\notemar{sb}{#1}}
 \newcommand{\noteinlinesb}[1]{\notein{sb}{#1}}
+\newcommand{\noteag}[1]{\notemar{ag}{#1}}
+\newcommand{\noteinlineag}[1]{\notein{ag}{#1}}
 
 % --- END COMMENTS AND NOTES -------
 
@@ -131,10 +134,15 @@ Univ. Grenoble Alpes, Inria, CNRS, Grenoble INP\footnote{Institute of Engineerin
 { \end{itemize}                  } 
 
 
+\newcommand{\Notation}[1]{\noindent\textbf{Notation~(#1)~}}
+
+\newcounter{defcounter}
+\newcommand{\Definition}[1]{\textbf{Definition \thedefcounter~(#1)~}}
 
 \newcommand{\eqdef}{\stackrel{\mathclap{\normalfont\mbox{\footnotesize def}}}{=}}
 \newcommand{\aoverb}[2]{\stackrel{\mathclap{\footnotesize #1}}{#2}}
 \newcommand{\s}{\hspace{1em}}
+\newcommand{\halfs}{\hspace{0.5em}}
 \newcommand{\mprod}{\text{ \textbf{m} }}
 % Source - https://tex.stackexchange.com/a/371469
 % Posted by Moriambar, modified by community. See post 'Timeline' for change history
@@ -149,6 +157,8 @@ Univ. Grenoble Alpes, Inria, CNRS, Grenoble INP\footnote{Institute of Engineerin
 
 \begin{abstract}
     This is the abstract for this document.
+
+    \keywords{First keyword  \and Second keyword \and Another keyword.}
 \end{abstract}
 
 \section*{Introduction}
@@ -159,7 +169,7 @@ Section~\ref{overview} explores briefly the main system description concepts of 
 \section{Overview of Chips modeling concepts}\label{overview}
 
 Chips is a language for defining Cyber-Physical Systems (CPS) putting the emphasis on the compositional aspect of each functionnalities. The broad definition of ``systems'' that we adopt can be summed up as ``a set of \emph{components} in interaction that together \emph{provide a service}''. 
-In Chips, the notion of providing a service leads to the concept of \emph{function}, while the notion of components is embodied by the concept of \emph{node} embedding such functions. To permit the coordination of functions accross nodes, Chips introduces the concept of user defined \emph{collective primitives}.
+In Chips, the notion of providing a service leads to the concept of \emph{function}, while the notion of components is embodied by the concept of \emph{nodes} embedding such functions. To permit the coordination of functions accross nodes, Chips introduces the concept of user defined \emph{collective primitives}.
 These three ideas are detailed in the following subsections. 
 
 \subsection{Functions}\label{functions}
@@ -188,7 +198,7 @@ Therefore, when connecting input and outputs of functions, one must care about t
     \includegraphics[width=0.3\columnwidth]{imgs/CST1.pdf}
     \includegraphics[width=0.3\columnwidth]{imgs/A.pdf}
     \includegraphics[width=0.3\columnwidth]{imgs/B.pdf}
-    \includegraphics[width=\columnwidth]{imgs/chips_deadlocks.pdf}
+    \includegraphics[width=\columnwidth]{imgs/Chips_deadlocks.pdf}
     \caption{Presence or absence of deadlocks for sets of functions defined with or without default values for their input.}\label{deadlocks}
 \end{figure}
 
@@ -269,10 +279,10 @@ In the context of collective functions, the set of instructions for the stream u
 \end{itemize}
 
 \subsubsection{Semantics for \emph{stop}}
-The \emph{stop} value is to signify that a variable must not be processed anymore during the propagation. Any component receiving a \emph{stop} signal during a spread operation will propagate the stop signal to warn other connected components that they must keep processing information without waiting for a ``fresh'' value. Any component receiving a \emph{stop} signal during a collect operation will assume the collect operation must be completed using the defaut accumulator instead of a pre-computed one.
-The \emph{stop} keyword can be used, during the implementation of the code section of the collective function, as a value of any primitive type. Any operation applied to a \emph{stop} operand will result in the \emph{stop} value.
-
-The stop keyword can be used in any expression of the stream update code section and the updated accumulators expressions.
+The \emph{stop} value is to signify that a variable must not be processed anymore during a collective operation. 
+\paragraph{During a spread operation} Any component receiving a \emph{stop} signal will propagate the stop signal to warn other connected components that they must keep processing information without waiting for a ``fresh'' value. 
+\paragraph{During a collect operation} Any component receiving a \emph{stop} signal will assume the collect operation must be completed using the defaut accumulator instead of a pre-computed one.
+The \emph{stop} keyword can be used as a value of any primitive type during the implementation of the code section of a collective primitive. Any operation applied to a \emph{stop} operand will result in the \emph{stop} value.
 
 \subsubsection{Defaultly available variables}
 
@@ -297,308 +307,286 @@ It is worth noting that for each channeled accumulator defined, the types of the
 \newpage
 \section{Formalisation of Chips modeling semantics}\label{osemantic}
 
-This section is dedicated to mathematically describe the elements of the Chips language that were described earlier in a less formal way. At first, we will define the formalism related the language \emph{functional graphs} (graphs related to the functional block dependencies). Secondly, we will put our focus on the \emph{mapping graphs} (graphs related to the association of functions and virtual objects to physical devices). Finally, we will see how the interconnections between virtual and physical objects define the structures of the datastreams that are profiled and aggragated among the system when using Chips collective primitives.
+This section is dedicated to mathematically describe the elements of the Chips language that were described earlier in a less formal way. At first, we will define the formalism related the language \emph{functional graphs} (graphs related to the functional block dependencies). Secondly, we will put our focus on the \emph{mapping graphs} (graphs related to the association of functions and virtual objects to physical devices). Finally, we will see how the interconnections between virtual and physical objects define the structures of the datastreams that are spread and collected among a system when using Chips collective primitives.
 
 \subsection{On functional graphs}
 
-The Chips language uses three kinds of primitive types being \emph{integers}, \emph{floating point values} and \emph{booleans}. The sets of all possible values of these types will respectively be denoted \emph{int}, \emph{float} and \emph{bool}, as in current general purpose programming languages. We assume their encoding being implementation dependant so we will not further describe these sets or specific restrictions applied to the operations applied to them.
-
-\paragraph{Notation} We denote the set of Chips types $\mathbb{T}$ as finite arrays of the primitive types \emph{int}, \emph{float} and \emph{bool}:
-\begin{align*}
-    \mathbb{T} = \{t^i~|~i\in\mathbb{N}^*, t\in\{int,float,bool\}\}
-\end{align*}
-
-When mapped by identifiers, types constitute the base element for the construction of function parameter (whether input or output) and variables.
-
-\paragraph{Definition} (Strings) Let $S$ be the set of all possible string sequences that are valid identifiers for vatiables and parameters. From the Chips grammar (Appendix~\ref{grammar}), we see that this set is exactly the language generated from the regular expression \texttt{[a-zA-Z][a-zA-Z0\-9\_]$^*$}, deprived of the set of Chips keywords. 
-
-\paragraph{Remark} (Operational semantics of the imperative aspect of Chips) To assign values to parameters or variables, Chips defines instructions and expressions in a way that is similar to other imperative languages. For concision purposes, we will not detail their semantics and refer to~\cite{plotkin_structural_2004} for examples of equivalent formal interpretation.
-
-\paragraph{Notation} We will denote as $T \in \mathbb{T}$ the set of all the values a variable $x \in X^S : T$ can hold, $X^S$ being the set of all defined variables in the scope of the use of this notation.
-
-\paragraph{Notation} For any $X : T^S$, a set of Chips variables, we will denote:
-\begin{itemize}
-    \item $E[X]$ the set of correctly typed expressions making use of these variables,
-    \item $value : E[X] \mapsto T$ the valuation function for a given expression over $X$ into a value of type $T\in\mathbb{T}$ and
-    \item $type : E[X] \mapsto \mathbb{T}$ the type deduction function for a correctly typed expression.
-\end{itemize}
+The concept of functional graph can be directly derived from the idea that, for a component system to work, it realizes simultaneously all the processes that it is built for. It makes use of coordination techniques to synchronize processes that depend on each others. Each process implemented is, within functional graphs, a vertex, while each synchronization of two processes is an edge. On systems where waiting delays are short enough to be ignored, the synchronous paradigm becomes a powerful tool to analyze, predict or design such systems. Thus, many languages of that sort have emerged for a wide variety of use cases (embedded systems, safety-critical systems, multi-physics modeling, FPGA programming\dots)\cite{halbwachs_synchronous_2005,leguernic_programming_1991,bourke_zelus_2013,dragoi_psync_2016,sylvestre_programmation_2024}. Chips specificity lies in its ambition to model and control cyber-physical systems where components can be composed hierarchically, in a distributed manner and with run-time reconfiguration faculties. With that in mind, its operational semantics must include a number of features that we will detail here before achieving the graph-like structure for processes interconnection that is characteristic to synchronous languages.
 
 
-\paragraph{Definition} (Inputs) Let $\mathbb{I}$ be the set of input parameters for functions. It is made of pairs containing a name $n$ and a value $v$.
+\Notation{Tuple usage} In the rest of this document, for any given tuple $t = (t_1, t_2, \dots)$, we will write $t.t_1, t.t_2, \dots$ to reference the elements that compose $t$.
 
-\begin{align}
-    \mathbb{I} = \{(n,v)~|~n \in S, v \in T\}
-\end{align}
+\newcommand{\I}{\mathbb{I}}
+\renewcommand{\O}{\mathbb{O}}
+\newcommand{\X}{\mathbb{X}}
+\renewcommand{\S}{\mathbb{S}}
+\renewcommand{\F}{\mathbb{F}}
 
-\paragraph{Definition} (Outputs) Let $\mathbb{O}$ be the set of output parameters for functions. It is made of pairs containing a name $n$ and an expression $e \in E[X_L]$ over a set of local variables $X_L : T^S$ associated to the function.
+\Notation{Inputs, outputs, variables and expressions} From now on, we will denote respectively $\I$, $\O$ and $\X$ the sets of correctly typed inputs, outputs and variables for Chips functions across the scope of any system description. $\S$ will refer to the set of all correct string sequences for names of variables, inputs, outputs and functions. Any $i \in \I$ is a tuple of the form $i = (name, value)$, any $o \in \O$ is a tuple of the form $o = (name, exp)$, Any $x \in \X$ is a tuple of the form $x = (name, value)$ with:
+    \begin{itemize}
+        \item names $\in \S$ being all chosen pair-wise distincts across $\I$, $\O$ and $\X$, unless specified,
+        \item values and expressions being tuples featuring an attribute $t$, their respective type.
+    \end{itemize}
+    We will assume values and expressions are correctly composed and typed within Chips instructions and expressions.
 
-\begin{align}
-    \mathbb{O} = \{(n,e)~|~n \in S, e \in E[X_L]\}
-\end{align}
+\begin{remark}
+    Since Chips is \emph{partially}-synchronous, some specific code sections\footnote{The code sections dedicated to defining components inner variables and their updating procedures} are to be written using an imperative syntax. In these sections, Chips defines instructions and expressions in a way that is similar to other imperative languages. For concision purposes, we will not detail their semantics and refer to~\cite{plotkin_structural_1981} for examples of equivalent formal interpretation. For the same reasons, no further detail either will be given on the data structures used to represent values.
+\end{remark}
 
-To facilitate the expression of properties using inputs and outputs, we also define the following functions:
-\begin{multicols}{2}
-\begin{equation*}
-name :
-\begin{cases}
-(n,v)&\longmapsto n \\
-\mathbb{I} &\longmapsto S
-\end{cases}
-\end{equation*}
+Functional graphs use functions as primary components.
 
-\begin{equation*}
-type :
-\begin{cases}
-(n,v)&\longmapsto type(v) \\
-\mathbb{I} &\longmapsto \mathbb{T}
-\end{cases}
-\end{equation*}
+\begin{definition}\label{functional_block}
+    A correctly defined Chips \emph{functional block}, belonging to a set we will call $\F$, is a tuple\\$f = (B, I, O, I_{default},X_L, X_{init}, then, ready)$, where:
+    \begin{itemize}
+        \item $I \subset \mathbb{I}$ and $O\subset\mathbb{O}$ are finite;
+        \item $I_{default} \subset \mathbb{I}$ is the (potentially empty) set of default values for the inputs of $f$ when they are provided;
+        \item $ready$ is a boolean variable set to:
+        \begin{equation*}
+            ready = (start \wedge (\forall i \in I, \exists i_{default} \in I_{default}, i.name = i_{default}.name)),
+        \end{equation*} 
+        with $start$ is arbitrarily set to $\top$ or $\bot$;
+        \item $X_L \subset \X$ is a finite set of local variables;
+        \item $X_{init} \subset \X$ corresponds to the initial value of $X_L$ (defined by a process that we will abstract here),
+        \item $then \in 2^{I \times X_L \mapsto X_L \times O}$ is singleton containing the process that modifies the values of $X_L$ and/or $O$ according to the values of $I$ and the past values of $X_L$\footnote{$f.then$ refers to a set of processes instead of directly to a process to have an easier compatibility with the formalism of the composition of functional blocks, which is the subject of further definition~\ref{composition}};
+        \item $B$ is a non-deterministic Labelled Transition System (LTS) that models the behavior of the function. It must be defined according to the nextly presented defintion.
+    \end{itemize}
+\end{definition}
 
-\begin{equation*}
-value :
-\begin{cases}
-(n,v)&\longmapsto v \\
-\mathbb{I} &\longmapsto T
-\end{cases}
-\end{equation*}
+\Notation{Updating process} For a given functional block $f \in \F$, we will write directly $f.\pi$ to refer to the only element contained by $f.then$.  
 
-\begin{equation*}
-names :
-\begin{cases}
-I           &\longmapsto \{name(i)~|~ i \in I\} \\
-2^\mathbb{I}&\longmapsto 2^S 
-\end{cases}
-\end{equation*}
-
-\begin{equation*}
-name :
-\begin{cases}
-(n,e)&\longmapsto n \\
-\mathbb{O} &\longmapsto S
-\end{cases}
-\end{equation*}
-
-\begin{equation*}
-type :
-\begin{cases}
-(n,e)&\longmapsto type(e)\\
-\mathbb{O} &\longmapsto \mathbb{T}
-\end{cases}
-\end{equation*}
-
-\begin{equation*}
-value :
-\begin{cases}
-(n,e)&\longmapsto value(e) \\
-\mathbb{O} &\longmapsto T
-\end{cases}
-\end{equation*}
-
-\begin{equation*}
-names :
-\begin{cases}
-O           &\longmapsto \{name(o)~|~o \in O\} \\
-2^\mathbb{O}&\longmapsto 2^S 
-\end{cases}
-\end{equation*}
-\end{multicols}
-And finally:
-\begin{equation*}
-value :
-\begin{cases}
-n           &\longmapsto 
-    \begin{cases}
-        \text{if }\exists i \in I, name(i) = n &\text{then } value(i)\\
-        \text{if }\exists o \in O, name(o) = n &\text{then } value(o)\\
-        \text{if }\exists x \in X, name(x) = n &\text{then } value(x)
-    \end{cases} \\
-S           &\longmapsto T
-\end{cases}
-\end{equation*}
-With $I$,$O$ and $X$ being respectively the sets of inputs, outputs and variables defined in the scope where the function is used.
-
-For the rest of this paper, we will assume that the names of inputs, outputs and local variables never overlap, even inbetween different functions. This detail is particularly relevant when it comes to describe the operational semantics of our models and is technically easily achievable with character escapement techniques and a correct scope management.
-
-\paragraph{Definition} (Function behavior) One can specify the behavior of functional blocks according to their inputs and outputs using a formalism close to the classic definition of a non-deterministic automaton, enhanced with local variables and a ``readiness'' property explained below. The behavior of a function with (evidently finite) inputs $I \subset \mathbb{I}$ and (also finite) outputs $O \subset \mathbb{O}$ is a tuple\\$B =  (Q,\Sigma,\Delta, X_L, ready)$, where:
-\begin{itemize}
-    \item $Q$ is a set of states containing exactly $2^{|I|} + 2^{|O|}$ states:
+\begin{definition}\label{functional_block_behavior}
+    Let $f\in\F$ be a functional block. Its \emph{behavior} $f.B$ is specified as a LTS. Classically, we define it as a tuple $ f.B = (Q, \Sigma, \Delta, q_0, q_f)$, where:
+    \begin{itemize}
+        \item $Q$ is the set of states of our LTS;
+        \item $q_0$ and $q_f$ are respectively the LTS initial and final states;
+        \item $\Sigma = \{x.name~|~x \in I \cup O\}\cup \{\varepsilon, init\}$ serves as the alphabet/list of labels of our LTS. $\varepsilon$ classically used for the $\varepsilon$-transitions of non-deterministic automata, and $init$ represents a setting-up event for the function;
+        \item $\Delta$ is the set of all the transition relations of the form $\delta = (q, event, guard, q') \in Q \times \Sigma \times \{\top,\bot\} \times Q$ that are associated to $f$.
+    \end{itemize}
+    Of course, not all LTS fit as a functional block behavior. A correct behavior for $f$ contains exactly $2^{\#f.I} + 2^{\#f.O}$ states:
     \begin{itemize}
         \item 2 states representing the initial state $q_{init}$ and the idle state $q_{\emptyset}$,
-        \item $2^{|I|}-1$ states, each labelled by a different \textbf{non-empty} unordered set $\iota=\{name(i)~|~i\in I'\subseteq I\}$, which we will write $q_\iota$ for short,
-        \item $2^{|O|}-1$ states, each labelled by a different \textbf{non-empty} unordered set $\omega=\{name(o)~|~o\in O'\subseteq O\}$, which we will write $q_\omega$ for short;
+        \item $2^{\#f.I}-1$ states, each labelled by a different \textbf{non-empty} (hence the ``$-1$'') unordered set $\iota=\{i.name~|~i\in I'\subseteq f.I\}$, which we will write $q_\iota$ for short,
+        \item $2^{\#f.O}-1$ states, each labelled by a different \textbf{non-empty} unordered set $\omega=\{o.name~|~o\in O'\subseteq O\}$, which we will write $q_\omega$ for short.
     \end{itemize}
-    \item $ready\in\{\top,\bot\}$ arbitrarily set;
-    \item $X_L$ is a finite set of local data variables that associate an identifier in $S$ to a value of type $T\in\mathbb{T}$;
-    \item $\Sigma = \{name(x)~|~x \in I \cup O\}\cup \{\varepsilon\}$ serves as the alphabet of the automaton;
-    \item $\Delta$ is the set of all the transition relations $\delta = (q, evt, \pi, g, q')$, such that:
-    \begin{itemize}
-        \item $(q, q')\in \{(q_I,q_O), (q_{init},q_I), (q_{init},q_\emptyset)\}\\
-        \cup \{(q_{\iota},q_{\iota'})~|~\iota\subset\iota'\subseteq \{name(i)~|~i\in I\} \wedge (|\iota| = |\iota'|-1)\}\\
-        \cup \{(q_{\omega},q_{\omega'})~|~\{name(o)~|~o\in O\}\supseteq\omega\supset\omega'  \wedge (|\omega'| = |\omega|-1)\}$;
-        \item $evt \in \Sigma$ in such way that\\$(q\in \{q_{init},q_{I}\} \Leftrightarrow evt = \varepsilon)\\
-        \wedge(\forall \iota \subset I, \forall x \in I, (q, q') = (q_{\iota},q_{\iota\cup\{name(x)\}}) \Rightarrow evt = name(x))\\
-        \wedge(\forall \omega \subset O, \forall x \in O, (q, q') = (q_{\omega\cup\{name(x)\}},q_{\omega}) \Rightarrow evt = name(x))$; 
-        \item $\pi : I \times X_L \times O \mapsto I \times X_L \times O$ is the process to interpret whenever the transition is applied, ;
-        \item $g \in \{\top,\bot\}$ is a guard on the transition equal to $\bot$ iff\\$(ready \wedge (q = q_{init}) \wedge (q' = q_\emptyset)) \vee (\neg ready \wedge (q = q_{init}) \wedge (q' = q_I))$.
-    \end{itemize}
-\end{itemize}
-
-For any element $\delta = (q, evt, \pi, g, q')$ of $\Delta$, we write $q(\delta)$, $evt(\delta)$, $\pi(\delta)$, $g(\delta)$ and $q'(\delta)$ as the respective components of $\delta$.
-
-\paragraph{Notation} (Substitution) In the remaining of this document, informally, we will write $A[B := C]$ to mean ``the value $A$ for which, in its definition, every instance of the value $B$ is substituted by the value $C$''.
-
-\paragraph{Definition} (Dataflow) A dataflow is a tuple $d=(o,i)$, where:
-\begin{itemize}
-    \item $o\in\mathbb{O}$,
-    \item $i\in\mathbb{I}$ and
-    \item $type(o)=type(i)$.
-\end{itemize}
-
-\paragraph{Notation} For any dataflow $d = (o,i)$, we note the source of $d$ as $source(d) = o$ and the sink of $d$ as $sink(d) = i$.
-
-\paragraph{Definition} (Functional block) A Chips \textit{functional block} is a tuple\\$f = (B, I, O, I_{default},X_L, init, then, ready)$, where:
-\begin{itemize}
-    \item $I \subset \mathbb{I}$ and $O\subset\mathbb{O}$ are finite;
-    \item $I_{default} \subset \mathbb{I}$ is the set of default values for input of $F$ when they are provided;
-    \item $ready = start \vee (\forall i \in I, name(i) \in names(I_{default}))$, with $start$ arbitrarily set to $\top$ or $\bot$;
-    \item $X_L \subset S \times T$ is a finite set of local variables;
-    \item $init \subset S \times T$ corresponds to the initial values of variables in $X_L$ (defined by a process that we will abstract here);
-    \item $then : I \times X_L \mapsto X_L \times O$ is the process that modifies the values of $X_L$ and/or $O$ according to the values of $I$ and the past values of $X_L$;
-    \item $B = (Q,\Sigma_f,\Delta, X_L, ready)$ is the function behavior with inputs $I$ and outputs $O$, for which $\Delta$ contains \textbf{exactly} the following transitions:
-    \begin{itemize}
-        \item $(q_{init}, \varepsilon, X_L:= init; \pi_{init},ready,q_I)$, where \\
-        $\pi_{init} \eqdef I := I[\{ i~|~name(i) \in names(I_{default}) \} := I_{default}]$,
-        \item $(q_{init}, \varepsilon, X_L:= init; I:=I_{default}, \neg ready, q_\emptyset)$,
-        \item $(q_I, \varepsilon, (X_L,O) := then(I,X_L),\top, q_O)$,
-        \item Let $D$ be the set of all the instanciated dataflows:\\
-        $\forall \delta = (q,evt,\pi,g,q') \in \Delta,\\
-        (\forall i\in I, (evt = name(i)) \wedge (\exists (o',i') \in D, name(i') = evt)$\\
-        $ \Rightarrow \pi \eqdef value(i) := value(o'))$ and \\
-        $(\forall o\in O, (evt = name(o)) \wedge (\exists (o',i') \in D, name(o') = evt)$\\
-        $ \Rightarrow \pi \eqdef value(o') := value(o))$.
-    \end{itemize}
-\end{itemize}
-
-We will call $\mathbb{F}$ the set of possibly definable functional blocks. For this set, we define:
-\begin{equation*}
-inputs :
-\begin{cases}
-(B, I, O, I_{default},X_L, init, then, ready)&\longmapsto I \\
-\mathbb{F} &\longmapsto \mathbb{I}
-\end{cases}
-\end{equation*}
-
-\begin{equation*}
-outputs :
-\begin{cases}
-(B, I, O, I_{default},X_L, init, then, ready)&\longmapsto O \\
-\mathbb{F} &\longmapsto \mathbb{O}
-\end{cases}
-\end{equation*}
-
-\paragraph{Definition} (Operational semantics of Chips functional blocks) The operational semantics of a functional block $f = (B, I, O, I_{default},X_L, init, then, ready)$ is given by the LTS $\sigma(f) = (Q \times X_L \times \mathbb{I}, \Sigma, \rightarrow)$ where:
-\begin{itemize}
-    \item $Q$ is the set of states of the functional block behavior $B$,
-    \item $\Sigma$ is the alphabet of that same $B$ and
-    \item Let $(q,x)$ be the control state of $f$ with $x\in X_L$, $\rightarrow$ is the minimal transition relation inductively defined by the following rule:
+    From these states, we have $f.q_f = q_{\emptyset}$ and naturally, $f.q_0 = q_{init}$. The transition relation is then built according to $f$. A transition $\delta = (q, event, guard, q')$ belongs to $f.\Delta$ if and only if all the following assertions are true:
+    \begin{multline}
+        (\delta.q, \delta.q')\in \{(q_I,q_O), (q_{init},f.q_I), (q_{init}, q_\emptyset)\}\\
+        \cup \{(q_{\iota},q_{\iota'})~|~\iota\subset\iota' \wedge (\#\iota = \#\iota'-1)\}\\
+        \cup \{(q_{\omega},q_{\omega'})~|~\omega\supset\omega' \wedge (\#\omega' = \#\omega-1)\}
+    \end{multline}
     \begin{equation}
         \begin{split}
-            q = q(\delta) \s\s a = evt(\delta)\s\s q' = q(\delta) \s\s g(\delta) = \top \s\s\\
+        (\delta.q = q_{init} \Leftrightarrow \delta.event = init)\s\wedge\s(\delta.q = q_{I} \Leftrightarrow \delta.event = \varepsilon)\s\s\s\\
+        \wedge (\forall \iota \subset I, \forall x \in I, (q, q') = (q_{\iota},q_{\iota\cup\{x.name\}}) \Leftrightarrow \delta.event = x.name)\s\halfs\\
+        \wedge (\forall \omega \subset O, \forall x \in O, (q, q') = (q_{\omega\cup\{x.name\}},q_{\omega}) \Leftrightarrow \delta.event = x.name)
+        \end{split}
+    \end{equation}
+    \begin{equation}
+        guard \Leftrightarrow [(q \neq q_{init}) \vee (f.ready \wedge (q' = q_I)) \vee (\neg f.ready \wedge (q' = q_\emptyset))]
+    \end{equation}
+\end{definition}
+
+\Notation{Assignment and substitution} In the remaining of this document, informally, we will write $A := B$ to mean ``$A$ is assigned the value of $B$'', and $A[B := C]$ to mean ``the value $A$ for which, in its definition, every instance of the value $B$ gets assigned the value $C$ instead''.
+
+\Notation{Transitions on LTSs} For a given transition of the form 
+\begin{equation*}
+    \delta = (q, event, guard, q') \in LTS
+\end{equation*}
+we use the syntax $q\aoverb{\delta}{\rightarrow}q'$ as a shorthand when $\delta.guard = \top$.
+
+\begin{definition}
+    Let $f = (B, I, O, I_{default},X_L, X_{init}, then ready)$ be a correctly defined functional block. The \emph{operational semantics} of $f$ is given by an LTS $\sigma(f) = (Q,\Sigma, \rightarrow)$, using $q \in f.Q$ as the control state, and $\rightarrow$ being the minimal transition relation inductively defined by the rule:
+    \begin{equation}
+        \centering
+        \begin{split}
+            q = \delta.q \s\s evt = \delta.event\s\s q' = \delta.q'\s\s\s\\
             \cfrac{
-                (inputs(f),x',outputs(f)) =  \pi(\delta)(inputs(f),x,outputs(f))
+                \s\s q\aoverb{\delta}{\longrightarrow}q' \s\s(I,X_L,O) := \pi_{q,q'}(I,X_L,O)\s\s
             }
             {
-                (q,x) \aoverb{a}{\longrightarrow} (q',x')
+                q \aoverb{evt}{\longrightarrow} q'
             }
         \end{split}
     \end{equation}
-    where $a \in \Sigma_f$ is any event that the function $f$ can interpret, i.e.~a writing of an input or a reading of an output.
-\end{itemize}
+    where $\pi_{q,q'} : I \times X_L \times O \mapsto I \times X_L \times O$ is the process to interpret whenever a transition is applied from state $q$ to state $q'$. Let ``$;$'' be the sequence evaluation operator and $nop$ be the empty process in the following definition:
+    \begin{equation*}
+        \pi_{q,q'}:
+        \begin{cases}
+            \text{ if } q = q_{init} & \text{ then } X_L:= X_{init}; \pi_{init}\\
+            \text{ if } (q,q') = (q_{I}, q_{O}) & \text{ then } (X_L, O) := f.\pi(I,X_L)\\
+            & \text{ otherwise } nop\\
+        \end{cases}
+    \end{equation*}
+    where
+    \begin{equation*}
+        \pi_{init} \eqdef I := I[\{ i~|~name(i) \in names(I_{default}) \} := I_{default}].
+    \end{equation*}
+\end{definition}
 
-Two particular cases of functional blocks are also worth describing: $CST$ and $buffer$.
+Now that functions and their behavior are defined, the last elements needed before assembling functions into our functional graphs are the dataflows which let functional blocks ``feed'' each other.
 
-\paragraph{Definition} (Constants functional blocks) Chips allows to directly instanciate Constants functional blocks with expressions instead of a definition of functional block plus a functional block instanciation. Their definition is as follow:
-\begin{align}
-    CST :
-    \begin{cases}
-        e       & \longmapsto (loop, \emptyset, \{ (\text{"output"}, value(e)) \}, \emptyset ,\emptyset, nop, nop, \top) \\
-        E[X]    & \longmapsto \mathbb{F}
-    \end{cases}
-\end{align}
+\begin{definition} 
+    Let $F\subset \F$ be a finite set of functional blocks. A \emph{dataflow} is a tuple $d=(source,sink,value,B)$, where:
+    \begin{itemize}
+        \item $source\in\bigcup_{f \in F} f.O$,
+        \item $sink\in\bigcup_{f \in F} f.I$,
+        \item $value$ is a Chips data that is transmitted through the dataflow,
+        \item $source.type = sink.type = value.type$ and
+        \item $B = (Q, \Sigma, \Delta, q_0, q_f)$ is a LTS explicitly defined by:
+        \begin{itemize}
+            \item $Q = \{q_{rcv}, q_{snd}\}$ as the set of states,
+            \item $\Sigma = \{source.name, sink.name\}$ as the alphabet,
+            \item $\Delta = \{(q_{rcv},source.name,\top,q_{snd}), (q_{snd},sink.name,\top,q_{rcv})\}$ as the set of transition relations,
+            \item $q_0 = q_{rcv}$ as the initial state and
+            \item $q_f = q_{snd}$ as the final state. 
+        \end{itemize}
+    \end{itemize}
+\end{definition}
 
-Where $loop$ is a 1-(initial)state, 1-transition, variable-free function behavior with no updtae process and an alphabet being the singleton $\{\text{"output"}\}$, $nop$ is short for the empty process and $X$ is a set of Chips variables.\\
-
-\paragraph{Definition} (Buffer functional blocks) They are a workaround to let functional blocks \emph{feed} themselves with values they produced. Their definition is as follow:
-
-\begin{align}
-    buffer :
-    \begin{cases}
-        t & \longmapsto (B_t, \{ (\text{"input"}, 0_t, \bot) \}, \{ (\text{"output"}, value(\text{"input"})) \}, \emptyset,\emptyset, nop, nop, \bot) \\
-        \mathbb{T}  & \longmapsto \mathbb{F}
-    \end{cases}
-\end{align}
-
-Composition of functional blocks is achieved by connecting outputs to inputs. Thus defining \emph{dataflows}.
-
-\paragraph{Notation} We write $D[F]$ the set of all the dataflows over a finite set of functional blocks $F \subset \mathbb{F}$.
-
-\paragraph{Definition} (Functional graph) Functional graphs are, as described in Section~\ref{functions}, a fnite directed graph $G_F = (F,D)$ for which vertices $F\subset\mathbb{F}$ (for functions) are instances of functional blocks and edges $D \subset D[F]$ (for dataflows) are the input/output relations between such blocks.
-A functional graph $G_F$ holds the following properties:
-\begin{itemize}
-    \item (input completeness)
+\begin{definition} 
+    Let $d\in F[\F]$, a dataflow. Its \emph{operational semantics} is given by $d.B$, applying either of these rule when using its transitions:
     \begin{equation}
-        \forall f\in F,\forall i \in inputs(f), \exists d \in D, i = sink(d)
+        \cfrac{
+            \delta.event = d.source.name \s\s\s d.value := d.source.value
+        }
+        {
+            q_{rcv} \aoverb{\delta}{\longrightarrow} q_{snd}
+        }
     \end{equation}
-    \item (output completeness)
     \begin{equation}
-        \forall f\in F,\forall o \in outputs(f), \exists d \in D, o = source(d)
+        \cfrac{
+            \delta.event = d.sink.name \s\s\s d.sink.value := d.value
+        }
+        {
+            q_{snd} \aoverb{\delta}{\longrightarrow} q_{rcv}
+        }
     \end{equation}
-    \item (dataflow sources unicity)
+    \noteag{I feel like I wrote something wrong but I don't see what\dots}
+\end{definition}
+
+\Notation{Dataflow set} A dataflow is a data structure that is tied to a set of functional blocks. For a given finite set of functional blocks $F \subset \F$, we write $D[F]$ the set of all the dataflows over $F$.
+
+\begin{definition} 
+    \emph{Functional graphs} are, as described in Section~\ref{functions}, a finite directed graph $G_F = (F,D)$ for which vertices $F\subset\F$ (for functions) are instances of functional blocks and edges $D \subset D[F]$ (for dataflows) are the input/output relations between such blocks.
+    A functional graph $G_F$ holds the following properties:
+
+    \begin{equation}\label{input_completeness}
+        \text{(input completeness)}\s\s\s\s\halfs\forall f\in F,\forall i \in f.I, \exists d \in D, i = d.sink\s\s\s\halfs
+    \end{equation}
+    \begin{equation}\label{output_completeness}
+        \text{(output completeness)}\s\s\s\s\forall f\in F,\forall o \in f.O, \exists d \in D, o = d.source\s\s
+    \end{equation}
+    \begin{multline}\label{sources_unicity}
+        \text{(dataflow sources unicity)}\s\s\forall f\in F, \forall o \in f.O,\\
+        [(\exists d_1 \in D, d_1.source = o)\wedge(\exists d_2 \in D, d_2.source = o)] \Rightarrow (d_1 = d_2)
+    \end{multline}
+    \begin{multline}\label{sinks_unicity}
+        \text{(dataflow sinks unicity)}\s\s\forall f\in F, \forall i \in f.I, \\
+        [(\exists d_1 \in D, d_1.sink = i)\wedge(\exists d_2 \in D, d_2.sink = i)] \Rightarrow (d1 = d2)
+    \end{multline}
+\end{definition}
+
+\Notation{Functional graphs acronyms} For short from now on, we will write \emph{DIOC} for Dataflow Input/Output Completeness and \emph{DSSU} for Dataflow Sources and Sinks Unicity. 
+
+With these defintions, the semantics of functional blocks can now be extended as the semantics of a \emph{composition} of functional blocks. In a given functional graph $G_F = (F,D)$, all functional blocks of $F$ are to be executed in parallel. Therefore, the operational semantics of each functional block has to stand simultaneously. However, the input/output dependecy of functions, modeled by dataflows, imply the synchronization of the different automata of a system. Thus, the need to define a composition operation.
+
+\begin{definition}\label{composition}
+    Let $f_1,f_2 \in\F$ two distinct functional blocks. We define the parallel composition operation of $f_1$ and $f_2$ relatively to a dataflow $d \in~D[\F]$ as:
+    \begin{align}
+        f_1 ||_d f_2 = (B, I, O, I_{default}, X_L, X_{init}, then, ready)
+    \end{align}
+    where: 
+    \begin{itemize}
+        \item $B = f_1.B \mprod d.B \mprod f_2.B$, $\mprod$ being the mixed (or synchronous) product as defined in~\cite{duboc_mixed_1986},
+        \item $I = f_1.I\cup f_2.I -\{d.sink\}$,
+        \item $O = f_1.O\cup f_2.O -\{d.source\}$,
+        \item $I_{default} = f_1.I_{default}\cup f_2.I_{default}$,
+        \item $X_L = f_1.X_L \cup f_2.X_L$,
+        \item $X_{init} = f_1.X_{init} \cup f_2.X_{init}$,
+        \item $then = f_1.then \cup f_2.then$, and
+        \item $ready = f_1.ready \wedge f_2.ready$
+    \end{itemize}
+    To compose a functional block $f_1$ with itself relatively to a dataflow $d \in~D[\F]$, we will also write it as:
+    \begin{align}
+        f_1 ||_d f_1 = (B, I, O, I_{default}, X_L, X_{init}, then, ready)
+    \end{align}
+    but instead we will have:
+    \begin{itemize}
+        \item $B = f_1.B \mprod d.B$,
+        \item $I = f_1.I -\{d.sink\}$,
+        \item $O = f_1.O -\{d.source\}$,
+        \item $I_{default} = f_1.I_{default}$,
+        \item $X_L = f_1.X_L$,
+        \item $X_{init} = f_1.X_{init}$,
+        \item $then = f_1.then$, and
+        \item $ready = f_1.ready$
+    \end{itemize}
+\end{definition}
+
+\Notation{Set of complex functional blocks} Until then, we used $\F$ as the set of correctly defined functional blocks. With composition, this set can be expanded to the set of complex functional blocks which we will call $\F^*$, such that, $\F \subset \F^*$ and for any $d\in D[\F]$, $\F^*$ is closed by the parallel composition operation relatively to $d$. Thus, $||_d$ is an internal composition law of $\F^*$
+
+
+\begin{remark}
+    About associativity, as claimed by C. Duboc in~\cite{duboc_mixed_1986}, definition 2.3, the mixed product $\mprod$ is associative. Since all other operations used to define the elements of the parallel composition are associative, we assume the parallel composition is associative.
+    
+    % when defining our system functional blocks, all the names used are chosen pair-wise distincts accross functions, parameters and variables. Therefore, for any pair made of a functional block and a dataflow $(f,d)\in \F\times D[\F]$, if $d$ doesn't reference any element of $f.I$ or $f.O$, there is no name collision on the labels of $f.B$ and $d.B$, which renders their mixed product isomorphic to the direct product of $f.B$ and $d.B$. The same is true for any $(d,f)\in D[\F] \times \F$. \noteag{I don't know how to say it :')} 
+\end{remark}
+
+\begin{remark}
+    About commutativity, the mixed product isn't strictly commutative, for any two elements $f_1,f_2 \in \F^*$, states of $(f_1 ||_d f_2).B$ are in $f_1.B.Q \times f_2.B.Q$ and states of $(f_2 ||_d f_1).B$ are in $f_2.B.Q \times f_1.B.Q$. However, $f_1 ||_d f_2$ is isomorphic to $f_2 ||_d f_1$.
+    It is reasonable to assume that there always exist a total order $\preccurlyeq$ over the elements of any finite subset of $\F$.
+    Let such order be used. For the rest of this paper, we will consider a tweaked version of the mixed product where each state $(q_\alpha,q_\beta) \in A \times B$ is renamed as $q_{sort(\alpha\cup\beta)} \in 2^{A\cup B}$. Such renewed mixed product is now commutative, and so becomes our parallel composition operation.
+\end{remark}
+
+\begin{definition}
+    Let $f_i = (B_i, I_i, O_i, {I_{default}}_i, {X_L}_i, {X_{init}}_i, then_i, ready_i)$, for $i = 1,2$ be two elements of $\F^*$ each being either an atomic functional block or a composition of functional blocks, let $d = (source_d,sink_d,value_d,B_d) \in D[\F]$. The \emph{operational semantics} of $f_1 ||_d f_2$ is a LTS $\sigma(f_1 ||_d f_2) = (Q,\Sigma, \rightarrow)$, using $(q_1,q_d,q_2) \in f_1.B.Q \times d.B.Q \times f_2.B.Q$ as the control state, $\Sigma = f_1.B.\Sigma \cup d.B.\Sigma \cup f_2.B.\Sigma$ and $\rightarrow$ being the minimal transition relation inductively defined by the rules:
+
     \begin{equation}
-        \forall o \in outputs(f),\\(\exists d_1 \in D, source(d_1) = o)\wedge(\exists d_2 \in D, source(d_2) = o) \Rightarrow d_1 = d_2
+        \cfrac{
+            \exists \delta \in B_1.\Delta, \nexists \delta' \in B_d.\Delta, \delta.event = a \wedge \delta'.event = a, q_1\aoverb{\delta}{\longrightarrow}q_1'
+        }
+        {
+            q_1,q_d,q_2 \aoverb{a}{\s\longrightarrow\s} q_1',q_d,q_2
+        }
     \end{equation}
-    \item (dataflow sinks unicity)
+
     \begin{equation}
-        \forall i \in inputs(f), \\(\exists d_1 \in D, sink(d_1) = i)\wedge(\exists d_2 \in D, sink(d_2) = i) \Rightarrow d1 = d2
+        \cfrac{
+            \exists \delta \in B_1.\Delta, \exists \delta' \in B_d.\Delta, \delta.event = a = \delta'.event, q_1\aoverb{\delta}{\longrightarrow}q_1',q_d\aoverb{\delta'}{\longrightarrow}q_d' 
+        }
+        {
+            q_1,q_d,q_2 \aoverb{a}{\s\longrightarrow\s} q_1',q_d',q_2
+        }
     \end{equation}
-\end{itemize}
 
-\paragraph{Definition} (Parallel composition of functional blocks) In our computation model, all functional blocks are to be executed in parallel. Therefore, the operational semantics of each functional block stand simultaneously for every functions. However, the input/output dependecy of functions, modeled by dataflows, imply the synchronization of the different automata of a system. For this purpose, we define the (dataflow related) parallel composition operation
-\begin{align}
-    ~//_d~ : 
-    \begin{cases}
-        (f_1, f2) &\mapsto f_1[name(source(d)):=d_{label}] \mprod f_2[name(sink(d)):=d_{label}]\\
-        \mathbb{F} \times \mathbb{F} &\mapsto \mathbb{F}
-    \end{cases}
-\end{align}
-where: 
-\begin{itemize}
-    \item $\mprod$ is the mixed (or synchronous) product as defined in~\cite{duboc_mixed_1986},
-    \item $d \in D$ is the dataflow that defines which input and output transitions are to be both re-labelled with the same fresh $d$-specific name $d_{label} \in S$.
-\end{itemize}
+    \begin{equation}
+        \cfrac{
+            \exists \delta \in B_2.\Delta, \nexists \delta' \in B_d.\Delta, \delta.event = a \wedge \delta'.event = a, q_2\aoverb{\delta}{\longrightarrow}q_2'
+        }
+        {
+            q_1,q_d,q_2 \aoverb{a}{\s\longrightarrow\s} q_1,q_d,q_2'
+        }
+    \end{equation}
 
-\paragraph{Remark} (On the renaming of our functional blocks labels) When defining our system functional blocks, all the names used are chosen pair-wise distincts. Therefore and undesirably, for any two $f_1, f_2 \in \mathbb{F}$, the mixed product of $f_1$ and $f_2$ is isomorphic to the direct product of $f_1$ and $f_2$. Hence the need to rename the input and output of functional blocks when they are synchronized by a dataflow.
+    \begin{equation}
+        \cfrac{
+            \exists \delta \in B_2.\Delta, \exists \delta' \in B_d.\Delta, \delta.event = a = \delta'.event, q_2\aoverb{\delta}{\longrightarrow}q_2',q_d\aoverb{\delta'}{\longrightarrow}q_d' 
+        }
+        {
+            q_1,q_d,q_2 \aoverb{a}{\s\longrightarrow\s} q_1,q_d',q_2'
+        }
+    \end{equation}
+    where $a$ is an element of $B_1.\Sigma \cup B_d.\Sigma \cup B_2.\Sigma$.
+\end{definition}
 
-\paragraph{Definition} (Operational semantics of composed functional blocks) 
-Let $f_1$ and $f_2$ be any functions of $G_F = (F, D)$ a functional graph. Let $d \in D$ a dataflow for which $source(d) \in outputs(f_1)$ and $sink(d) \in inputs(f_2)$. The semantics of the sub graph formed by the parallel composition of $f_1$ and $f_2$ is simply given by $\sigma(f_1 ~//_d~ f_2)$.\\
+\begin{definition}
+    Let $G_F = (F, D)$ a correcly defined functional graph ensuring DIOC and DSSU. The \emph{operational semantics} of such functional graph $\sigma(G_F)$ is given by the successive parallel composition of all the functional blocks of $F$ relatively to all the dataflows of $D$.
+\end{definition}
+
 
 \myrule
-This hlined section is to be included in the rest of the definition of the operational semantics of the functional blocks.
+Everything below this comment is TODO.
 \myrule
-
-\paragraph{Remark} (Self parallel composition) The above definition holds when the source and sink parameters of a given dataflow $d = (o,i)$ are referencing respectively an output and an input of a same functional block $f = (B, I, O, I_{default},X_L, init, then, ready)$. In such case, the operational semantics of this subgraph of the whole system is given by $\sigma(f ~//_d'~ f')$ where 
-\begin{align*}
-    (f',d') = (f[I-\{i\}:=r(I-\{i\})][O:=r(O)][X_L:=r(X_L)], d)[i:=r(i)]
-\end{align*}
-using informally $r$ as the renaming function that chooses new unique names for each variable, parameter or set of such objects.
-
-\paragraph{Definition} (Operational semantics of functional graphs) Let $G_F = (F, D)$ a functional graph achieving input/output completeness and dataflow sources/sinks unicity. The operational semantics of $G_F$ is obtained by the accumulated application of the parallel composition operation on all functional blocks of $G_F$. Let $id \in \mathbb{N}$ be the AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA AAAAAAAAAAA AAAAAAAAAAAAAA AAAAAAAAAAAAAAAA Idon't know how to write this formally.
-\begin{align}
-    \sigma(G_F) = \sigma().
-\end{align}
-
-\myrule
-
 \subsubsection{Properties of Chips functional graphs}
 
 In this (subsub)section, we must define:
@@ -700,372 +688,4 @@ On a vraiment fait du bon travail, c'est super!
 
 \printbibliography
 
-
-\newpage
-\appendix
-\section{Chips grammar}\label{grammar}
-The current syntax of the language is defined hereafter in the style of ANTLR4 (BNF enhanced with regular expression elements).
-\begin{verbatim}
-grammar Chips;
-program
-    : preamble* system? EOF
-    ;
-system
-    : SYSTEM_KW L_CURL
-        s_statement*
-      R_CURL
-    ;
-preamble
-    : object_def
-    | function_def
-    | collective_op_def
-    ;
-object_def
-    : OBJECT_KW IDENTIFIER with_section
-    ;
-node_mapping
-    : HAVING_KW IDENTIFIER AS_KW IDENTIFIER SEMICOL
-    ;
-function_def
-    : l_function_def
-    | p_function_def
-    ;
-collective_op_def
-    : c_signature L_CURL
-        c_statement*
-      R_CURL
-      ARROW TARGET_KW L_PARENTH c_expr (COMMA c_expr)* R_PARENTH
-      c_output+
-    ;
-c_output
-    : ARROW DEFAULT_KW L_PARENTH c_expr (COMMA c_expr)* R_PARENTH
-    | ARROW IDENTIFIER L_PARENTH c_expr (COMMA c_expr)* R_PARENTH
-    ;
-l_function_def
-    : LOGICAL_KW IDENTIFIER L_PARENTH 
-        (df_parameter_decl (COMMA df_parameter_decl)*)? R_PARENTH
-        init_section
-        then_section
-        named_output*
-    ;
-p_function_def
-    : PHYSICAL_KW IDENTIFIER L_PARENTH 
-        (pdf_parameter_decl (COMMA pdf_parameter_decl)*)? R_PARENTH
-        with_section
-        init_section
-        then_section
-        p_named_output*
-    ;
-c_signature
-    : c_keywords L_PARENTH 
-        (cdf_defaulted_decl (COMMA cdf_defaulted_decl)*)? R_PARENTH
-        IDENTIFIER AMONG_KW IDENTIFIER
-    ;
-c_keywords
-    : SPREAD_KW
-    | COLLECT_KW
-    ;
-with_section
-    : WITH_KW L_CURL
-        with_statement*
-      R_CURL
-    ;
-with_statement
-    : IDENTIFIER IDENTIFIER SEMICOL
-    | CTX_KW df_type suffixes IDENTIFIER (ASSIGN expr)? SEMICOL
-    | statement
-    ;
-init_section
-    : INIT_KW L_CURL
-        (statement)*
-      R_CURL
-    ;
-then_section
-    : THEN_KW L_CURL
-        (statement)*
-      R_CURL
-    ;
-expr
-    : expr0 LT expr
-    | expr0 GT expr
-    | expr0 LEQ expr
-    | expr0 GEQ expr
-    | expr0 NEQ expr
-    | expr0 EQ  expr
-    | expr0 AND expr
-    | expr0 OR expr
-    | expr0
-    ;
-expr0
-    : expr01 PLUS expr0
-    | expr01 MINUS expr0
-    | expr01
-    ;
-expr01
-    : MINUS expr1
-    | expr1
-    ;
-expr1
-    : expr2 TIMES expr1
-    | expr2 DIV expr1
-    | expr2 MOD expr1
-    | NOT expr2
-    | expr2
-    ;
-expr2
-    : INT
-    | FLOAT
-    | BOOL
-    | IDENTIFIER suffixes
-    | L_PARENTH expr R_PARENTH
-    | CTX_KW PERIOD IDENTIFIER suffixes
-    | IDENTIFIER L_PARENTH (expr (COMMA expr)*)? R_PARENTH
-    | cast
-    ;
-cast
-    : L_PARENTH df_type R_PARENTH expr
-    ;
-c_expr
-    : c_stopless_expr
-    | STOP_KW
-    ;
-c_stopless_expr
-    : c_stopless_expr0 LT c_stopless_expr
-    | c_stopless_expr0 GT c_stopless_expr
-    | c_stopless_expr0 LEQ c_stopless_expr
-    | c_stopless_expr0 GEQ c_stopless_expr
-    | c_stopless_expr0 NEQ c_stopless_expr
-    | c_stopless_expr0 EQ c_stopless_expr
-    | c_stopless_expr0 AND c_stopless_expr
-    | c_stopless_expr0 OR c_stopless_expr
-    | c_stopless_expr0
-    ;
-c_stopless_expr0
-    : c_stopless_expr01 PLUS c_stopless_expr0
-    | c_stopless_expr01 MINUS c_stopless_expr0
-    | c_stopless_expr01
-    ;
-c_stopless_expr01
-    : MINUS c_stopless_expr1
-    | c_stopless_expr1
-    ;
-c_stopless_expr1
-    : c_stopless_expr2 TIMES c_stopless_expr1
-    | c_stopless_expr2 DIV c_stopless_expr1
-    | c_stopless_expr2 MOD c_stopless_expr1
-    | NOT c_stopless_expr2
-    | c_stopless_expr2
-    ;
-c_stopless_expr2
-    : IDENTIFIER c_suffixes
-    | INT
-    | FLOAT
-    | BOOL
-    | INPUT_KW
-    | CTX_KW PERIOD IDENTIFIER c_suffixes
-    | IDENTIFIER PERIOD IDENTIFIER c_suffixes
-    | IDENTIFIER L_PARENTH (c_expr (COMMA c_expr)*)? R_PARENTH
-    | L_PARENTH c_stopless_expr R_PARENTH
-    | c_cast
-    ;
-c_cast
-    : L_PARENTH df_type R_PARENTH c_stopless_expr
-    ;
-suffixes
-    : (L_SQUA expr R_SQUA)*
-    ;
-c_suffixes
-    : (L_SQUA c_stopless_expr R_SQUA)*
-    ;
-s_suffixable_expr
-    : IDENTIFIER
-    | IDENTIFIER (L_PARENTH (expr (COMMA expr)*)? R_PARENTH)?
-    | block PERIOD IDENTIFIER
-    ;
-block
-    : IDENTIFIER suffixes
-    ;
-loop_in
-    :  IDENTIFIER (L_PARENTH (expr (COMMA expr)*)? R_PARENTH)?
-    ;
-loop_statement
-    : FOREACH_KW IDENTIFIER IN_KW loop_in L_CURL
-        statement*
-      R_CURL
-    ;
-c_loop_statement
-    : FOREACH_KW IDENTIFIER IN_KW loop_in L_CURL
-        c_statement*
-      R_CURL
-    ;
-s_loop_statement
-    : FOREACH_KW IDENTIFIER IN_KW s_suffixable_expr L_CURL
-        s_statement*
-      R_CURL
-    ;
-if_else_statement
-    : if_statement
-      ELSE_KW L_CURL
-        (statement)*
-      R_CURL
-    ;
-s_if_else_statement
-    : s_if_statement
-      ELSE_KW L_CURL
-        s_statement*
-      R_CURL
-    ;
-c_if_else_statement
-    : c_if_statement
-      ELSE_KW L_CURL
-        c_statement*
-      R_CURL
-    ;
-if_statement
-    : IF_KW L_PARENTH expr R_PARENTH L_CURL
-        (statement)*
-      R_CURL
-    ;
-s_if_statement
-    : IF_KW L_PARENTH expr R_PARENTH L_CURL
-        s_statement*
-      R_CURL
-    ;
-c_if_statement
-    : IF_KW L_PARENTH c_expr R_PARENTH L_CURL
-        c_statement*
-      R_CURL
-    ;
-statement
-    : df_type suffixes IDENTIFIER (ASSIGN expr)? SEMICOL
-    | IDENTIFIER suffixes ASSIGN expr SEMICOL
-    | CTX_KW PERIOD IDENTIFIER suffixes ASSIGN expr SEMICOL
-    | loop_statement
-    | if_else_statement
-    | if_statement
-    ;
-s_statement
-    : IDENTIFIER suffixes IDENTIFIER SEMICOL
-    | block PERIOD IDENTIFIER L_PARENTH s_expr R_PARENTH SEMICOL
-    | LINK_KW IDENTIFIER suffixes TO_KW IDENTIFIER suffixes SEMICOL
-    | s_loop_statement
-    | s_if_else_statement
-    | s_if_statement
-    | statement
-    ;
-s_expr
-    : block PERIOD IDENTIFIER
-    | collective_operation block PERIOD IDENTIFIER
-    | expr
-    ;
-collective_operation
-    : L_PARENTH IDENTIFIER R_PARENTH
-    ;
-c_statement
-    : cdf_full_declaration SEMICOL
-    | IDENTIFIER c_suffixes ASSIGN c_expr SEMICOL
-    | CTX_KW PERIOD IDENTIFIER c_suffixes ASSIGN c_expr SEMICOL
-    | c_loop_statement
-    | c_if_else_statement
-    | c_if_statement
-    ;
-named_output
-    : ARROW IDENTIFIER L_PARENTH expr (COMMA expr)* R_PARENTH
-    ;
-p_named_output
-    : ARROW ACTUATOR_KW IDENTIFIER L_PARENTH expr (COMMA expr)* R_PARENTH
-    | named_output
-    ;
-df_parameter_decl
-    : df_type suffixes IDENTIFIER (ASSIGN expr)?
-    ;
-df_type
-    : INT_KW
-    | FLOAT_KW
-    | BOOL_KW
-    ;
-pdf_parameter_type
-    : df_type suffixes
-    | SENSOR_KW df_type suffixes
-    ;
-pdf_parameter_decl
-    : pdf_parameter_type IDENTIFIER (ASSIGN expr)?
-    ;
-cdf_defaulted_decl
-    : df_type suffixes IDENTIFIER ASSIGN c_expr
-    ;
-cdf_full_declaration
-    : df_type suffixes IDENTIFIER (ASSIGN c_expr)?
-    ;
-SYSTEM_KW           : 'system'|'SYSTEM';
-INT_KW              : 'int';
-FLOAT_KW            : 'float';
-BOOL_KW             : 'bool';
-LOGICAL_KW          : 'logical';
-PHYSICAL_KW         : 'physical';
-AS_KW               : 'as';
-INIT_KW             : 'init';
-THEN_KW             : 'then';
-FOREACH_KW          : 'for';
-IN_KW               : 'in';
-IF_KW               : 'if';
-ELSE_KW             : 'else';
-TO_KW               : 'to';
-LINK_KW             : 'link';
-HAVING_KW           : 'having';
-INPUT_KW            : 'input';
-STOP_KW             : 'stop';
-AMONG_KW            : 'among';
-SPREAD_KW           : 'spread';
-COLLECT_KW          : 'collect';
-CTX_KW              : 'ctx';
-OBJECT_KW           : 'object';
-WITH_KW             : 'with';
-BY_KW               : 'by';
-TARGET_KW           : '@';
-DEFAULT_KW          : 'default';
-USING_KW            : 'using';
-ACTUATOR_KW         : 'actuator';
-SENSOR_KW           : 'sensor';
-ARROW               : '->';
-PLUS                : '+';
-MINUS               : '-';
-TIMES               : '*';
-DIV                 : '/';
-MOD                 : '%';
-LT                  : '<';
-GT                  : '>';
-EQ                  : '==';
-LEQ                 : '<=';
-GEQ                 : '>=';
-NEQ                 : '!=';
-AND                 : '&&';
-OR                  : '||';
-NOT                 : '!';
-ASSIGN              : '=';
-COMMA               : ',';
-SEMICOL             : ';';
-L_PARENTH           : '(';
-R_PARENTH           : ')';
-L_CURL              : '{';
-R_CURL              : '}';
-L_SQUA              : '[';
-R_SQUA              : ']';
-COLUMN              : ':';
-PERIOD              : '.';
-BOOL                : 'true'| 'false';
-fragment DIGIT      : [0-9] ;
-fragment DOTTED_NUMBER
-    : '.'DIGIT+
-    | DIGIT+'.'DIGIT*
-    ;
-fragment ID_START   : [a-zA-Z];
-fragment ID_NEXT    : [a-zA-Z0-9_];
-FLOAT               : DOTTED_NUMBER;
-INT                 : DIGIT+;
-IDENTIFIER          : ID_START ID_NEXT*;
-NEWLINE : ('\r'? '\n')+ -> skip ;
-WS          : [ \t\r]+ -> skip ;
-COMMENT     : '//' ~[\r\n]* -> skip ;
-\end{verbatim}
 \end{document}
