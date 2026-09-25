@@ -1,0 +1,335 @@
+\documentclass[runningheads]{llncs}
+\usepackage[english]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\let\proof\relax
+\let\endproof\relax
+\usepackage{iftex}
+\usepackage[dvipdfm]{graphicx}
+\usepackage{rotating}
+\usepackage{bmpsize}
+\usepackage{wrapfig}
+\usepackage{lscape}
+\usepackage{rotating}
+\usepackage{listings}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{amsfonts}
+\usepackage{hyperref}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{multicol}
+\usepackage{biblatex}
+\usepackage[version=4]{mhchem}
+\usepackage{siunitx}
+\usepackage{longtable,tabularx}
+\usepackage{times}
+\usepackage{subcaption}
+\usepackage{xcolor}
+\usepackage{multirow}
+\usepackage{enumitem}
+\usepackage{calc}
+
+\newlength{\tabwidth}
+\newlength{\tabwidthi}
+\newlength{\tabwidthii}
+\newlength{\tabwidthiii}
+\newcommand{\tabsize}{\footnotesize}
+\newcommand{\thead}[1]{\tabsize\textbf{#1}}
+\addbibresource{refs.bib}
+
+\newcommand{\ie}{\emph{i.e.}}
+\newcommand{\eg}{\emph{e.g.}}
+\newcommand{\etc}{etc.}
+
+
+\usepackage{sbnotes}
+\declareauthor{sb}{Simon}
+\declareauthor{sc}{Sophie}
+\declareauthor{ok}{Olga}
+\declareauthor{ag}{Anna}
+\initcolors
+
+\newcommand{\todomardone}[2]{\todomar{#1}{\textbf{[DONE]} #2}}
+\newcommand{\todoindone}[3][]{\todoin[\textbf{[DONE]} #1]{#2}{#3}}
+
+% Backward compatibility with notes w/o sbnotes
+\newcommand{\noteok}[1]{\notemar{ok}{#1}}
+\newcommand{\noteinlineok}[1]{\notein{ok}{#1}}
+\newcommand{\notesc}[1]{\notemar{sc}{#1}}
+\newcommand{\SC}[1]{\notein{sc}{#1}}
+\newcommand{\noteinlinesc}[1]{\notein{sc}{#1}}
+\newcommand{\notesb}[1]{\notemar{sb}{#1}}
+\newcommand{\noteinlinesb}[1]{\notein{sb}{#1}}
+\newcommand{\noteag}[1]{\notemar{ag}{#1}}
+\newcommand{\noteinlineag}[1]{\notein{ag}{#1}}
+
+% --- END COMMENTS AND NOTES -------
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    keepspaces=true,
+    numbers=left,
+    numbersep=4pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2,
+    language={c++},
+    % keyword highlighting
+    classoffset=1, % starting new class
+    alsoletter={-,>},
+    morekeywords={->, SYSTEM, physical, logical, int, float, init, then, link, to, spread, collect},
+    keywordstyle=\color{codepurple},
+    classoffset=0
+}
+\lstset{style=mystyle}
+
+\title{Definition of Chips Operational Semantics through BIP component based formalism\thanks{This work was supported by the ANR grant ANR-23-CE25-0004 (ADAPT).}}
+
+%\author{No author given}
+\author{
+Anna Gallone\inst{1}\orcidID{0009-0007-3217-3896}
+\and 
+Simon Bliudze\inst{2}\orcidID{0000-0002-7900-5271} 
+\and 
+Sophie Cerf\inst{3}\orcidID{0000-0003-0122-0796} 
+\and
+Olga Kouchnarenko\inst{1}\orcidID{0000-0003-1482-9015}\thanks{O.~Kouchnarenko was supported by the EIPHI Graduate School (grant number ANR-17-EURE-0002).}
+}
+%
+\institute{
+Université Marie et Louis Pasteur, CNRS, UMR 6174 FEMTO-ST, F-25000 Besançon, France
+\and 
+Univ. Lille, Inria, CNRS, Centrale Lille, UMR 9189 CRIStAL, F-59000 Lille, France 
+\and 
+Univ. Grenoble Alpes, Inria, CNRS, Grenoble INP\footnote{Institute of Engineering Univ. Grenoble Alpes}, LIG, F-38000 Grenoble, France \\
+\email{FirstName.LastName@femto-st.fr$^1$,FirstName.LastName@inria.fr$^{2,3}$}
+}
+%\def\titlerunning{Designing with Chips, Executing with BIP}
+\authorrunning{A.~Gallone et al.}
+\date{\today}
+
+% Source - https://tex.stackexchange.com/a/136050
+% Posted by petermeissner, modified by community. See post 'Timeline' for change history
+% Retrieved 2026-05-06, License - CC BY-SA 3.0
+
+\newenvironment{myitemize}
+{ \begin{itemize}
+    \setlength{\itemsep}{0pt}
+    \setlength{\parskip}{0pt}
+    \setlength{\parsep}{0pt}     }
+{ \end{itemize}                  } 
+
+
+\newcommand{\Notation}[1]{\noindent\textbf{Notation~(#1)~}}
+
+\newcounter{defcounter}
+\newcommand{\Definition}[1]{\textbf{Definition \thedefcounter~(#1)~}}
+
+\newcommand{\eqdef}{\stackrel{\mathclap{\normalfont\mbox{\footnotesize def}}}{=}}
+\newcommand{\aoverb}[2]{\stackrel{\mathclap{\footnotesize #1}}{#2}}
+\newcommand{\s}{\hspace{1em}}
+\newcommand{\halfs}{\hspace{0.5em}}
+\newcommand{\mprod}{\text{ \textbf{m} }}
+% Source - https://tex.stackexchange.com/a/371469
+% Posted by Moriambar, modified by community. See post 'Timeline' for change history
+% Retrieved 2026-05-29, License - CC BY-SA 4.0
+\newcommand{\myrule}{\par\noindent\rule[-1pt]{0.5\textwidth}{0.4pt}\\}
+
+\newcommand{\F}{\mathbb{F}}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+    This Document contains a draft of the definition of operational semantics for Chips through the lens of the BIP Framework (which has been proven to be correct by construction).
+
+    \keywords{First keyword  \and Second keyword \and Another keyword.}
+\end{abstract}
+
+\section{Introduction}
+Chips is a language for designing complex systems models based on the formalism of functional block diagrams. It also features programming primitives for the specification of the coordination mechanisms one would want to implement in systems comprising large sets of components. Our primary intention with this language was to compile it into models within the BIP framework. To build a robust and provable compilation pipeline from Chips to BIP, we used Model Driven Engineering technics that are implemented within the Eclipse Modeling Framework. Our compilation process, described in Figure~\ref{fig:EMFpipeline}, is based on a metamodel of the Chips language (\texttt{chips1.1.ecore}) that allow us to use any serialized Chips model as a source artifact to generate a BIP compatible target model artifact. Such BIP models are then inserted in the BIP compiler middle-end part to be directly reused as if the compiler just parsed a BIP program. Such pipeline benefits the insurances provided by the Chips and BIP models automatic validation relatively to their languages Meta-models and also avoids the introduction of bugs during a potential code generation step. Hereafter, we describe formally the principles on which the meta-models used are grounded and give arguments on what exactly are the transformations that allow to build a BIP model from a Chips specification. 
+As the BIP operational semantics is fully defined, and its compilation process proven to be correct, these elements together provide an interpretation of the Chips operational semantics under the lense of the subset of the BIP framework our transformation rules define. The following Section~\ref{sec:ChipsMM} proposes a definition of the Chips Models elements based on its metamodel, then Section~\ref{sec:BipMM} recalls the main elements of the BIP models that we use during the transformations that we formally present in Section~\ref{sec:Chips2Bip}.
+
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.8\columnwidth]{./imgs/EMFpipeline.pdf}
+    \caption{Eclipse Based Model Transformation Pipeline}\label{fig:EMFpipeline}
+\end{figure}
+
+\section{Definition of the Chips models architecture}
+\label{sec:ChipsMM}
+
+Though it is based on functional block diagrams, in the graph that functions form, our Chips language doesn't rely solely on a function-output-to-function-input type of edges between the different vertices. Indeed, Chips models also care about concepts like distribution of dataflows among sets of devices and embedding relationships between software and hardware. These three concepts together form what Chips models try to capture. To describe a Chips model $M$, we therefore consider a tuple of three graphs $M \eqdef (G_N,G_F,L)$ where:
+\begin{itemize}
+    \item $G_N$ is the network graph, representing which component can directly transmit information to another,
+    \item $G_F$ is the functional graph, representing the dataflows between the functions of the system, and
+    \item $L$ is the linking forest, a set of trees that associate processes to the nodes of the networks designed.
+\end{itemize}
+
+Following subsections give a formal definition of each one of these graphs and their compounds. 
+Beforehand, it is necessary to mention what actually are the data manipulated by the the model components we are about to define.
+
+\begin{definition}\label{def:ChipsDataType}
+    Since Chips is a dataflow oriented language, each data is not only modeled inbetween by solely a value, but rather by a tuple $(v, stop)$. $v$ is the (typed) value held and to be used when manipulating variables, while $stop \in \{\top,\bot\}$ is a simulation artifact necessary for the simultaneous simulation of clocks and non-transmitted data. Thank to this last component, the non-transmission of data can be modeled with the transmission of $d = (x, \top)$ with $x$ being any value. The concept of value will not be covered and will be assumed to be any element of the usual programming datatypes \emph{int}, \emph{float} and \emph{bool}.
+    In the remaining of this document, we will call the the set of all possible values $\mathbb{X}$.
+\end{definition}
+
+For the sake of conciseness, we will informally define variables as elements that can be updated with an assignement of a direct value or another variable of the same datatype. We don't treat the cases of incorrect type assignement as this behavior is prevented by the type-safe nature of Chips, enforced at parse time. 
+
+\subsection{Network Graphs}
+\label{sec:networkgraphs}
+
+Let us define define the primitive model elements that constitute the vertices of Chips network graphs:\emph{nodes}.
+
+\begin{definition}\label{def:node}
+    A \emph{Node} is a tuple $(CH, CTX)$, where:
+    \begin{itemize}
+        \item $CH$ is a set of \emph{channels}. It captures the connectivity features of the device modeled by the node. Each channel is typed by a label, arbitrarily defined by the user.
+        \item $CTX$, which we call \emph{contextuals} in the Chips language, is a set of variables that are read and write accessible by processes located in the node. 
+    \end{itemize}
+\end{definition}
+
+Introducing \emph{contextuals} is a level of modelization that will become relevant when defining linking trees, which put in relation the network and functional graphs of Chips models.
+
+\paragraph{Notation} In the rest of this document, we will refer to elements mentioned during the definiton of any abstract object with a dot notation, i.e. to refer to the set of channels of a given node $n$, we write $n.CH$.
+
+\begin{definition}\label{def:network_graph}
+    A \emph{Network Graph} is a couple $G_N = (N,C)$ where:
+    \begin{itemize}
+        \item $N$ is a set of nodes.
+        \item $C \subset \{n \times ch \times n' \times ch' \text{ | } n,n' \in N, ch \in n.CH \text{ and } ch' \in n'.CH \}$\\is a set of connections inbetween nodes. $(n,ch)$ is the source of the connection and $(n',ch')$ is the sink of the connection.
+        \item No channel can be a source or sink more than once. \\Formally $\forall c_1,c_2 \in C, c_1.ch \neq c_2.ch \wedge c_1.ch' \neq c_2.ch'$.
+    \end{itemize}
+\end{definition}
+
+This definition of what networks are from the point of view of Chips let us draw a minimal yet useful representation of any kind of interacting entities. The fact that channels are typed allow some robustness and modularity in the design of our components : A declared USB port cannot communicate with a WIFI card for instance.
+
+\begin{remark}\label{rem:VirtualNetwork}
+    By letting channel type labels being defined by the user, Chips enable the description of some sort of virtual networks as well. Distinctions between nodes can be made at any level of abstraction.
+\end{remark}
+
+\begin{remark}\label{rem:PhysicalVirtualDistinction}
+    Chips syntax allows to differentiate network nodes in two categories, physical and virtual nodes (respectively called \emph{physical} and simply \emph{object}). Such differentiation serves the purpose of checking the feasibility of embedding relationship, with in mind, the goal of generating code for real systems. In the scope of this paper, we intend to build the semantics of the chips language, not the way such semantics are achieved by any implementation. Therefore, we will not cover here the elements of Chips language relative to the distinction between physical and virtual nodes.
+\end{remark}
+
+
+\subsection{Functional Graphs}
+\label{sec:functionalgraphs}
+
+To build the definition of a functional graph, we first need to introduce what form their vertices. Such elements are embodied by functional blocks.
+
+\begin{definition}\label{def:functional_block}
+    A correctly defined Chips \emph{functional block}, belonging to a set we will call $\F$, is a tuple $(I, O, CTX, S, f)$, where:
+    \begin{itemize}
+        \item $I$ and $O$ are finite sets of respectively input and output variables,
+        \item $CTX$ is a finite set of shared variables that are \emph{accessible}\footnote{A detailed explanation of what ``accessible'' means will be provided in Section-\ref{linkingforests}} by the functional block. \noteag{do so the definition is not forwarded}
+        \item $S$ is a finite set of state variables.
+        \item $f$ is a function of $\mathbb{X}^{I + CTX + S} \mapsto \mathbb{X}^{O + CTX + S}$.
+    \end{itemize}
+\end{definition}
+
+Now that we have defined the vertices for our functional graphs and what data they treat, we need to define our edges. Chips allows to design 2 different kinds of edges for their functional graphs, regular output-to-input relationship (simple dataflow) and one-output-to-many-input or many-output-to-one-input relationship (collective dataflow).
+
+
+\begin{definition}\label{def:SimplDataflow}
+    A \emph{simple dataflow} can be defined as an element of
+    \[
+        DF = \{F, output, F', input \text{ | } F, F' \in \F \text{, } output \in F.O \text{ and } input \in F'.I\}.
+    \]
+    We call $(F,output)$ the \emph{source} of the dataflow and $(F',input)$ the \emph{sink} of the dataflow.
+\end{definition}
+
+Simple dataflows allow to specify one-to-one relations. If need be, with this structure, to define a broadcast or aggregation behavior while acknowledging the topology of a network, a significant description overhead has to be faced. For instance, let us draw a network of four devices \textbf{A}, \textbf{B}, \textbf{C} and \textbf{D}, where  information can only flow between the pairs (\textbf{A},\textbf{B}), (\textbf{B},\textbf{C}) and (\textbf{C}, \textbf{D}) as shown by figure~\ref{fig:smallnet}. If \textbf{A} needs to broadcast information to \textbf{B}, \textbf{C} and \textbf{D}, the situation changes drastically whether or not we decide to take account of the network topology. Each involved component would require new dataflows for re-transmitting any information that is not addressed to it. On a small example like this one, it may not look like much, but for any chain of $n$ components, instead of defining one dataflow from the source of the broadcast to each one of the $n$ target functional blocks, this represents the definition of $\Sigma_{i=0}^{n}i$ which in terms, can be reduced to a spatial complexity of $O(n^2)$.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\columnwidth]{./imgs/DataflowOverHead.pdf}
+    \caption{Model architecture allowing a broadcast operation among a chain of four functional blocks}\label{fig:smallnet}
+\end{figure}
+
+Moreover, it becomes very hard to design the right definitions for our functional blocks inputs and outputs if we want to simulate broadcast or aggregation operations enchanced with on-the-fly computations, or even if our topology isn't a chain, but a more complex one. This is why we also need to design other kinds of dataflows, which we call \emph{collective dataflows}.
+
+\begin{definition}\label{def:CollectiveDataflows}
+    For a given network graph $G_N$, \emph{Collective Dataflow} types are defined as tuples in the form of quadruples $cdf = \left(t \times ACC \times N \times cf\right)$ where:
+    \begin{itemize}
+        \item $t \in \{spread, collect\}$, 
+        \item $ACC \in \mathbb{X}^n$ with $n\in\mathbb{N}$,
+        \item $N \subseteq G_N.N$ is the set of nodes of the network graph that are compatible with the collective dataflow.
+        \item $cf \in \mathbb{X}^n \mapsto \mathbb{X}^{n\times y + 1}$ having $y = \#\left(\bigcup_{n \in N}n.CH\right)$, is a function over the domain of the accumulator that maps to the co-domain composed of one accumulator per channel used by the network and one value that is to be assigned to each process running at the location of the current node. \noteag{Make stuff rely on types instead of sets of nodes}
+        \noteag{Make an explanation in the form of a reccursive function base on such types. Instead? Adjacently?}
+    \end{itemize}
+
+    An instance of such dataflow is therefore defined as an element of
+    \begin{multline}
+        CDF = \{\left( F, output, cdf, F', input\right) \text{ | }\\ \left(F, F'\right) \in \F^2 \text{, } cdf \in T\times ACC\times 2^{G_N.N}\times CF \text{, }\\ output \in F.O \text{, } input \in F'.I\}.
+    \end{multline}\noteag{Make (F, output) be something like F.output}
+    We call $(F,output)$ the \emph{source} of the dataflow and $(F',input)$ the \emph{sink} of the dataflow.
+\end{definition}
+
+This way, a functional graph can be synthesized without worrying about the supporting network underneath. As long as the one-to-one relations between each node are specified, this last definition allows to distinguish propagation or aggregation for any possible path for the information across the network. Which leads us now to the definition:
+
+\begin{definition}\label{def:FunctionalGraph}
+    Chips models draw \emph{functional graphs} in the form of $G_F = (F, DF\cup CDF)$ where:
+    \begin{itemize}
+        \item $F \subset \F$ is the set of instantiated functional blocks in a model,
+        \item $DF\cup CDF$ is the set of (simple or collective) dataflows that connect the elements of $F$ together,
+        \item $\forall c \in CDF, \exists G_N \text{ such that } c.cdf \in 2^{G_N.N}$,
+        \item each functional block input (respectively output) is the sink (resp. source) of at most one simple dataflow,
+        \item each functional block input is the sink of at most one collective dataflow of type $spread$,
+        \item each functional block output is the source of at most one collective dataflow of type $collect$,
+        \item each functional block input (resp. output) is the sink (resp. source) of at least one dataflow (simple or collective).
+    \end{itemize}
+\end{definition}
+
+\subsection{Linking Forests}
+\label{sec:linkingforests}
+
+Both network and functional graphs have been defined. To complete the picture of what a Chips model is, there remains to define the glue that maps functions onto nodes.
+
+\begin{definition}\label{def:LinkingForest}
+    Let $G_N$ be a network graph and $G_F$ be a functional graph for which every collective dataflow instance relies on nodes of $G_N$.
+    A \emph{linking forest} $L$ is a set of directed rooted trees that have leaf vertices being elements of $G_F.F$ (i.e. functional blocks) and other vertices being elements of $G_N.N$ (i.e. nodes). Edges are oriented toward the root of the tree they belong to.
+\end{definition}
+
+\paragraph{Notation} For any node $n$ belonging to a tree of a liniking forest $L$, any element $x$ of any subtrees of $n$ is said to be \emph{embedded} in $n$. In such case, we write $x \sqsubset_L n$.
+
+\paragraph Thank to this definition, we can also define precisely what we meant in Defintion~\ref{def:functional_block} with ``accessible contextual variable''.
+
+\begin{definition}\label{def:ContextualsAccessibility}
+    Let $G_N$ be a network graph. Let $G_F$ be a functional graph for which every collective dataflow instance relies on nodes of $G_N$. Finally, let $L$ be a linking forest over elements of $G_N$ and $G_F$. The \emph{contextual accessibility} is a relation defined by:
+    \[
+        \forall f \in G_F.F, \forall n \in G_N.N \text{, \hspace{1em}} f \sqsubset_L n \Leftrightarrow n.CTX \subseteq f.CTX.
+    \]\noteag{Define f.CTX as a subset of the union of all nodes that are parents of f in the tree}
+\end{definition}
+
+The conjunction of network graphs, functional graphs and linking forests correspond to the complete set of concepts that Chips intends to work with. It features the possibility to design both topological and business aspects of a cyber-physical system and lets the designer take into account any of the two aspect to base the implementation of the other one.
+
+\section{(Partial) Definition of the BIP component model}
+\label{sec:BipMM}
+
+BIP is a component based framework that lets one design a wide range of systems in a discrete way, i.e. in the form of synchronized automata and or petri networks. It is a mature framework that lead to the redaction of many papers, among which its formal operational semantics can be found. This section recalls the concepts of the BIP framework that are used during the compilation of Chips models into BIP ones.
+
+
+
+\section{Transformation rules of Chips Models into BIP components}
+\label{sec:Chips2Bip}
+
+\printbibliography
+
+\end{document}
